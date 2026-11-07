@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fishbowl</title>
+<style>
+/* Charte AMlearn : 6.editions/identite/charte_graphique.md. Polices de l'appareil, aucune ressource externe. */
+:root{
+  --fond:#F6F9FF; --cercle:#E1EBFF; --trait:#6E94F0; --brume:#8AA9C9; --nuit:#2B3A5C; --gris:#4F5E7C;
+  --fine:#DCE8F4; --bleu:#3D63C9; --bleu-fonce:#2F4FA8; --pastille:#D6E4FF;
+  --pile:system-ui,'Segoe UI',Roboto,Arial,sans-serif; --courbe:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box}
+html{font-size:calc(clamp(12px,min(1.04vw,1.85vh),19.2px)*var(--z,1))}
+html,body{height:100%;margin:0}
+body{font-family:var(--pile);color:var(--nuit);background:var(--fond);line-height:1.5;overflow:hidden}
+button{font:inherit;color:inherit}
+a{color:var(--bleu);text-decoration:underline;text-underline-offset:3px}
+a:hover{color:var(--bleu-fonce)}
+a.fleche::after{content:" \2197"}
+a.tag{text-decoration:none;color:var(--nuit)}
+a.tag::after{content:" \2197"}
+a.tag:hover{background:var(--bleu);color:#fff;border-color:var(--bleu)}
+:focus-visible{outline:3px solid var(--bleu);outline-offset:2px}
+
+/* Décor : deux cercles doux */
+.decor{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.decor i{position:absolute;border-radius:50%;display:block}
+.decor .c1{width:46vmax;height:46vmax;background:var(--cercle);left:-14vmax;bottom:-18vmax;animation:derive 22s ease-in-out infinite alternate}
+.decor .c2{width:16vmax;height:16vmax;background:var(--brume);opacity:.28;right:-4vmax;top:-5vmax;animation:derive 28s ease-in-out infinite alternate-reverse}
+@keyframes derive{from{transform:translate(0,0)}to{transform:translate(3vmax,-2vmax)}}
+
+.barre{position:fixed;left:0;top:0;height:4px;background:var(--trait);width:0;z-index:30;transition:width .6s var(--courbe)}
+
+/* Scène */
+.deck{position:fixed;inset:0 0 3.2rem 0;z-index:1}
+.slide{position:absolute;inset:0;display:none;padding:clamp(1rem,3vw,3rem) clamp(1rem,5vw,5rem);overflow:auto}
+.slide.active{display:block}
+.slide.active .monte{animation:monte .7s var(--courbe) both}
+.slide.active .monte:nth-child(2){animation-delay:.06s}
+.slide.active .monte:nth-child(3){animation-delay:.12s}
+.slide.active .monte:nth-child(4){animation-delay:.18s}
+@keyframes monte{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.contenu{max-width:78rem;margin:0 auto}
+
+h1,h2,h3{margin:0;font-weight:800;line-height:1.15}
+h1{font-size:clamp(2.2rem,5.4vw,4.2rem)}
+h2{font-size:clamp(1.6rem,3.4vw,2.7rem);margin:.4rem 0 .6rem}
+h3{font-size:1.15rem}
+p{margin:.4rem 0}
+.sur{font-size:.95rem;font-weight:700;letter-spacing:.02em;color:var(--bleu-fonce)}
+.pastille{display:inline-block;background:var(--pastille);color:var(--nuit);font-size:.8rem;font-weight:700;padding:.1rem .6rem;border-radius:1rem}
+.lead{font-size:1.2rem;color:var(--gris);max-width:52rem}
+.sec{color:var(--gris)}
+
+/* Navigation */
+.nav{position:fixed;left:0;right:0;bottom:0;height:3.2rem;z-index:20;display:flex;align-items:center;gap:.5rem;padding:0 clamp(.6rem,2vw,1.6rem);background:rgba(246,249,255,.92);border-top:1px solid var(--fine);backdrop-filter:blur(4px)}
+.nav .sections{display:flex;gap:.2rem;overflow-x:auto;flex:1;scrollbar-width:none}
+.nav .sections::-webkit-scrollbar{display:none}
+.nav button{background:none;border:0;border-bottom:3px solid transparent;padding:.35rem .6rem;cursor:pointer;color:var(--gris);font-size:.88rem;white-space:nowrap}
+.nav button:hover{color:var(--bleu-fonce)}
+.nav button.on{color:var(--nuit);font-weight:700;border-bottom-color:var(--bleu)}
+.nav .pas{display:flex;align-items:center;gap:.2rem;font-size:.88rem;color:var(--gris)}
+.nav .pas button{font-size:1.2rem;padding:.1rem .6rem;color:var(--bleu)}
+
+/* Titre */
+.titre-wrap{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:1rem}
+
+.titre-wrap h1 span{color:var(--bleu)}
+.mention{position:absolute;left:clamp(1rem,5vw,5rem);right:clamp(1rem,5vw,5rem);bottom:.9rem;max-width:78rem;margin:0 auto;font-size:.85rem;color:var(--gris)}
+
+/* Axes */
+.quatre{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:1rem;margin:1.2rem 0}
+.axe-carte{background:#fff;border:1px solid var(--fine);border-radius:12px;padding:1rem 1.1rem;text-align:left;cursor:pointer;transition:border-color .25s var(--courbe),transform .25s var(--courbe)}
+.axe-carte:hover{border-color:var(--trait);transform:translateY(-3px)}
+.axe-carte .num{font-size:2.2rem;font-weight:800;color:var(--trait);line-height:1}
+.axe-carte b{display:block;margin:.3rem 0 .2rem}
+.axe-carte span{color:var(--gris);font-size:.95rem}
+
+.entete{display:flex;flex-wrap:wrap;align-items:baseline;gap:.4rem 1rem}
+.compte{margin-left:auto;font-size:.9rem;color:var(--gris)}
+.zone{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:1.2rem;margin-top:.8rem}
+@media (max-width:900px){.zone{grid-template-columns:1fr}}
+.cartes{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;align-content:start}
+@media (max-width:560px){.cartes{grid-template-columns:1fr}}
+.carte{background:#fff;border:1px solid var(--fine);border-radius:12px;padding:.8rem .9rem;text-align:left;cursor:pointer;position:relative;display:flex;flex-direction:column;gap:.35rem;min-height:7.4rem;transition:border-color .25s var(--courbe),transform .25s var(--courbe),opacity .25s}
+.carte:hover{border-color:var(--trait);transform:translateY(-2px)}
+.carte[aria-pressed="true"]{border-color:var(--bleu);box-shadow:inset 0 0 0 2px var(--bleu)}
+.carte img,.carte .mono{width:2.4rem;height:2.4rem;object-fit:contain}
+.carte .logos{display:flex;gap:.5rem;align-items:center;height:2.4rem}
+.carte .logos img{width:2rem;height:2rem}
+.detail dd{white-space:pre-line}
+.carte img.drapeau{width:3.2rem;height:2.134rem;box-shadow:0 0 0 1px var(--fine)}
+.carte .mono{display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--pastille);font-weight:800;color:var(--bleu-fonce)}
+.carte b{font-size:1.02rem;line-height:1.2}
+.carte small{color:var(--gris);font-size:.88rem;line-height:1.3}
+.carte.vu{opacity:.55}
+.carte.vu::after{content:"vu";position:absolute;right:.6rem;top:.5rem;font-size:.75rem;font-weight:700;background:var(--pastille);padding:0 .5rem;border-radius:1rem}
+.detail{background:#fff;border:1px solid var(--fine);border-radius:12px;padding:1.1rem 1.3rem;min-height:14rem}
+.detail .vide{color:var(--gris);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:12rem;text-align:center;gap:.6rem}
+.detail h3{font-size:1.35rem;margin:.3rem 0}
+.detail dl{margin:.6rem 0}
+.detail dt{font-weight:700;color:var(--bleu-fonce);font-size:.85rem;margin-top:.6rem;letter-spacing:.02em}
+.detail dd{margin:0}
+.detail .actions{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;margin-top:.9rem;font-size:.9rem}
+.lien-btn{background:none;border:0;padding:0;color:var(--bleu);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.lien-btn:hover{color:var(--bleu-fonce)}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;padding:.05rem .55rem;border-radius:1rem;background:var(--pastille)}
+.tag.verifier{background:#fff;border:1.5px dashed var(--bleu-fonce);color:var(--bleu-fonce)}
+
+/* Enjeux */
+.onglets{display:flex;gap:.3rem;border-bottom:1px solid var(--fine);margin:.6rem 0 1rem}
+.onglets button{background:none;border:0;border-bottom:4px solid transparent;padding:.5rem 1rem;cursor:pointer;font-weight:700;color:var(--gris)}
+.onglets button[aria-selected="true"]{color:var(--nuit);border-bottom-color:var(--bleu)}
+.panneau{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:1.4rem;align-items:start}
+@media (max-width:900px){.panneau{grid-template-columns:1fr}}
+.fait{background:#fff;border:1px solid var(--fine);border-left:5px solid var(--trait);border-radius:10px;padding:.7rem 1rem;margin-bottom:.7rem}
+.fait .tag{margin-top:.3rem}
+.illus{display:flex;flex-direction:column;gap:.8rem;align-items:center}
+.illus svg{width:100%;max-width:19rem;height:auto}
+.barres{width:100%;max-width:24rem;font-size:.9rem}
+.barres .rang{display:grid;grid-template-columns:5rem 1fr;gap:.6rem;align-items:center;margin:.35rem 0}
+.barres .bar{height:1.5rem;background:var(--fine);border-radius:4px;overflow:hidden}
+.barres .bar b{display:block;height:100%;width:0;background:var(--trait);border-radius:4px;transition:width 1.4s var(--courbe);font-size:.78rem;color:#fff;text-align:right;padding:0 .4rem;line-height:1.5rem;white-space:nowrap}
+.barres .bar.nuit b{background:var(--bleu-fonce)}
+.barres figcaption{color:var(--gris);font-size:.85rem;margin-bottom:.3rem}
+.clignote{animation:clignote 2.4s ease-in-out infinite}
+@keyframes clignote{50%{opacity:.25}}
+
+/* Sondage */
+.sondage{display:grid;gap:.6rem;max-width:46rem;margin-top:1rem}
+.option{display:grid;grid-template-columns:minmax(0,14rem) 1fr 3.4rem;gap:.8rem;align-items:center}
+@media (max-width:640px){.option{grid-template-columns:1fr 3rem}.option .bar{grid-column:1/-1;order:3}}
+.option button{background:#fff;border:1.5px solid var(--bleu);color:var(--bleu-fonce);border-radius:8px;padding:.5rem .8rem;text-align:left;cursor:pointer;font-weight:600;transition:background .2s var(--courbe)}
+.option button:hover{background:var(--pastille)}
+.option .bar{height:1.4rem;background:var(--fine);border-radius:4px;overflow:hidden}
+.option .bar b{display:block;height:100%;width:0;background:var(--trait);transition:width .7s var(--courbe)}
+.option output{font-weight:800;font-size:1.3rem;text-align:right}
+
+/* Fishbowl */
+.trois{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem;margin:1rem 0}
+.trois .bloc{background:#fff;border:1px solid var(--fine);border-top:5px solid var(--trait);border-radius:10px;padding:.9rem 1.1rem}
+.trois .bloc b{display:block;font-size:1.15rem;margin-bottom:.2rem}
+.objectif{border-left:5px solid var(--bleu);padding:.4rem 1rem;margin:.6rem 0;font-size:1.2rem;font-weight:600;max-width:60rem}
+.dispo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:1.4rem;align-items:start;margin-top:.6rem}
+@media (max-width:900px){.dispo{grid-template-columns:1fr}}
+.moments{display:grid;gap:.5rem}
+.moment{background:#fff;border:1px solid var(--fine);border-radius:10px;padding:.7rem 1rem;display:grid;grid-template-columns:3.4rem 1fr;gap:.8rem;align-items:start}
+.moment .min{font-size:1.6rem;font-weight:800;color:var(--trait);line-height:1;text-align:center}
+.moment .min small{display:block;font-size:.7rem;font-weight:700;color:var(--gris)}
+.chrono{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;margin-top:.9rem;background:#fff;border:1px solid var(--fine);border-radius:12px;padding:.8rem 1.1rem}
+.anneau{position:relative;width:6rem;height:6rem;flex:none}
+.anneau svg{width:100%;height:100%;transform:rotate(-90deg)}
+.anneau circle{fill:none;stroke-width:7}
+.anneau .fond{stroke:var(--fine)}
+.anneau .reste{stroke:var(--trait);stroke-linecap:round;transition:stroke-dashoffset .9s linear}
+.anneau output{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;font-variant-numeric:tabular-nums}
+.anneau.fini .reste{stroke:var(--bleu-fonce)}
+.chrono .reg{display:flex;flex-direction:column;gap:.5rem}
+.chrono .reg .ligne{display:flex;flex-wrap:wrap;gap:.3rem .9rem}
+
+.chrono .nom{font-weight:700}
+#chaises{display:block;width:100%;max-height:21rem}
+.slide.active .seq{animation:monte .8s var(--courbe) both;animation-delay:var(--d,0s)}
+.etiquette{margin:.9rem 0 0}
+.trois.compact{margin:.5rem 0}
+.trois.compact .bloc{padding:.65rem 1rem}
+.trois.fin .bloc{border-top-color:var(--bleu-fonce)}
+.flux{display:flex;align-items:center;gap:.8rem;margin:.1rem 0 .1rem .4rem;color:var(--bleu-fonce);font-weight:700}
+.flux svg{flex:none}
+.slide.active .flux .trait{stroke-dasharray:1;stroke-dashoffset:1;animation:trace-fleche 1s var(--courbe) 3.5s both}
+@keyframes trace-fleche{to{stroke-dashoffset:0}}.trois.gardez{margin-top:1.4rem}
+.bloc.fort{background:var(--pastille);border-color:var(--bleu);border-top:5px solid var(--bleu-fonce)}
+.bloc.fort b{font-size:1.3rem}
+.chrono .choix{display:flex;gap:.4rem;flex-wrap:wrap}
+.chrono .choix button{background:#fff;border:1.5px solid var(--bleu);color:var(--bleu-fonce);border-radius:8px;padding:.35rem .9rem;font-weight:700;cursor:pointer;transition:background .2s var(--courbe),color .2s var(--courbe)}
+.chrono .choix button:hover{background:var(--pastille)}
+.chrono .choix button[aria-pressed="true"]{background:var(--bleu);color:#fff}
+.chrono .boutons{display:flex;gap:.5rem}
+.icone{width:2.7rem;height:2.7rem;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1.5px solid var(--bleu);background:#fff;color:var(--bleu);cursor:pointer;padding:0;transition:background .2s var(--courbe)}
+.icone:hover{background:var(--pastille)}
+.icone.plein{background:var(--bleu);color:#fff}
+.icone.plein:hover{background:var(--bleu-fonce)}
+.icone svg{width:1.4rem;height:1.4rem;fill:currentColor}
+.regles-centre{max-width:34rem;margin:.4rem auto 0;text-align:center;color:var(--gris);font-size:.98rem;line-height:1.45}
+.regles-centre p{margin:.25rem 0}
+.regles-centre b{color:var(--nuit)}.regle{color:var(--gris);font-size:.95rem;margin-top:.8rem}
+
+/* Tableaux de saisie */
+.tableau{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem;margin-top:1rem}
+.col{background:#fff;border:1px solid var(--fine);border-radius:12px;padding:.8rem .9rem;display:flex;flex-direction:column;gap:.5rem;min-height:12rem}
+.col.large{grid-column:1/-1;min-height:8rem}
+.col h3{font-size:1.05rem;border-bottom:3px solid var(--trait);padding-bottom:.3rem}
+.col.survit h3{border-bottom-color:var(--bleu)}
+.col.elimine h3{border-bottom-color:var(--brume)}
+.col form{display:flex;gap:.4rem}
+.col input{flex:1;min-width:0;font:inherit;padding:.4rem .6rem;border:1px solid var(--trait);border-radius:6px;color:var(--nuit);background:var(--fond)}
+.col form button{background:var(--bleu);color:#fff;border:0;border-radius:6px;padding:.4rem .8rem;cursor:pointer;font-weight:700}
+.col form button:hover{background:var(--bleu-fonce)}
+.col ul{list-style:none;margin:0;padding:0;display:grid;gap:.4rem;align-content:start}
+.col li{background:var(--pastille);border-radius:8px;padding:.4rem .7rem;display:flex;gap:.5rem;justify-content:space-between;align-items:flex-start;animation:monte .5s var(--courbe) both}
+.col li button{background:none;border:0;cursor:pointer;color:var(--gris);font-size:1.1rem;line-height:1;padding:0 .2rem}
+.col li button:hover{color:var(--nuit)}
+.outils-tab{display:flex;flex-wrap:wrap;gap:.6rem 1.4rem;margin-top:.8rem;font-size:.9rem;align-items:center}
+.etat{color:var(--gris);font-size:.88rem}
+
+/* Sources */
+.sources{columns:2 22rem;column-gap:2rem;font-size:.92rem;margin-top:.8rem}
+.sources h3{font-size:1rem;margin:.9rem 0 .2rem;break-after:avoid}
+.sources ul{margin:0;padding-left:1.1rem}
+.sources li{margin:.15rem 0;break-inside:avoid}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+
+}
+</style>
+</head>
+<body>
+
+<div class="decor" aria-hidden="true"><i class="c1"></i><i class="c2"></i></div>
+<div class="barre" id="barre"></div>
+
+<main class="deck" id="deck">
+
+<!-- 0 Titre -->
+<section class="slide" data-section="accueil" aria-label="Titre">
+  <div class="contenu titre-wrap">
+    <p class="sur monte">Creacamp · Veille, échanges et co-créations pédagogiques</p>
+    <h1 class="monte">Fishbowl : le <span>vécu de terrain</span></h1>
+    <p class="lead monte">Capitaliser sur les pratiques de la communauté et faire émerger des pistes d'action concrètes.</p>
+  </div>
+  <p class="mention">Support réalisé avec l'aide de l'IA</p>
+</section>
+<!-- 7 Consigne animée -->
+<section class="slide" data-section="consigne" id="consigne" aria-label="Fishbowl : consigne">
+  <div class="contenu">
+    <p class="sur monte">Fishbowl</p>
+    <h2 class="monte">À vous : le vécu de terrain</h2>
+    <p class="objectif seq" style="--d:.4s">Capitaliser sur les pratiques de la communauté et faire émerger des pistes d'action concrètes à partir du vécu de terrain.</p>
+
+    <p class="etiquette seq" style="--d:1s"><b>Venez sur une des chaises centrales pour :</b></p>
+    <div class="trois compact">
+      <div class="bloc seq" style="--d:1.4s"><b>Proposer</b>Une initiative, un projet, une expérimentation liée à l'usage de l'IA dans votre établissement (ou un témoignage externe que vous connaissez bien).</div>
+      <div class="bloc seq" style="--d:2s"><b>Questionner</b>Poser une question d'éclaircissement, de clarification.</div>
+      <div class="bloc seq" style="--d:2.6s"><b>Réagir</b>Réagir, partager un vécu similaire.</div>
+    </div>
+
+    <div class="flux seq" style="--d:3.4s" aria-hidden="true">
+      <svg viewBox="0 0 40 56" width="40" height="56"><path class="trait" d="M20 2 V44 M9 34 L20 48 L31 34" fill="none" stroke="#3D63C9" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1"/></svg>
+      <span>puis, à la fin du fishbowl</span>
+    </div>
+
+    <div class="trois compact fin">
+      <div class="bloc seq" style="--d:4.2s"><b>Synthèse collective</b>Idées clés, difficultés rencontrées et leviers identifiés.</div>
+      <div class="bloc seq" style="--d:4.8s"><b>Besoins émergents</b>Mise en lumière des besoins émergents dans les établissements.</div>
+      <div class="bloc seq" style="--d:5.4s"><b>Prochaines sessions IA4EDU</b>Identification de thématiques prioritaires à explorer dans les prochaines sessions IA4EDU.</div>
+    </div>
+  </div>
+</section>
+<!-- 8 Dispositif -->
+<section class="slide" data-section="dispositif" id="dispositif" aria-label="Fishbowl : dispositif">
+  <div class="contenu">
+    <p class="sur monte">Fishbowl</p>
+    <h2 class="monte">Deux questions pour échanger</h2>
+    <div class="dispo monte">
+      <div>
+        <div class="moments">
+          <div class="moment"><div class="min">1</div><div><h3>Première question</h3>J'ai vécu, entrepris, observé, entendu quelque chose qui m'a vraiment facilité la vie…</div></div>
+          <div class="moment"><div class="min">2</div><div><h3>Seconde question</h3>Quelles résistances avez-vous rencontrées dans votre établissement ? Quelles limites de l'IA avez-vous identifiées ?</div></div>
+          <div class="moment"><div class="min">3</div><div><h3>Notes et synthèse collective</h3>Pendant le fishbowl, une personne prend des notes. À la fin : idées clés, difficultés rencontrées, leviers identifiés.</div></div>
+        </div>
+        <div class="chrono" id="chrono">
+          <div class="anneau" id="anneau"><svg viewBox="0 0 100 100"><circle class="fond" cx="50" cy="50" r="44"/><circle class="reste" cx="50" cy="50" r="44" stroke-dasharray="276.46" stroke-dashoffset="0"/></svg><output id="temps">25:00</output></div>
+          <div class="reg">
+            <div class="choix" id="phases" role="group" aria-label="Choisir la question"></div>
+            <div class="boutons"><button class="icone plein" id="chrono-go" type="button" aria-label="Démarrer"></button><button class="icone" id="chrono-zero" type="button" aria-label="Remettre à zéro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.4-5.3M5 4v4h4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <svg viewBox="0 0 480 400" role="img" aria-label="Quatre personnes au centre, neuf autour en cercle : une personne touche une épaule et prend la place" id="chaises"></svg>
+        <div class="regles-centre"><p><b>Quatre chaises au centre.</b></p><p>Pour entrer, touchez l'épaule de quelqu'un du centre : il vous cède sa place.</p><p>Un tour par personne avant les reprises, pour qu'aucune voix ne domine.</p><p>Une personne note sur l'affiche.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 Synthèse -->
+<section class="slide" data-section="synthese" data-tableau="synthese" aria-label="Synthèse collective">
+  <div class="contenu">
+    <p class="sur monte">Fin du fishbowl</p>
+    <h2 class="monte">Synthèse collective</h2>
+    <p class="lead monte">Les idées clés, les difficultés rencontrées et les leviers identifiés. On écrit ici, à voix haute, ce que le groupe dit.</p>
+    <div class="tableau monte"></div>
+    <div class="outils-tab"><button class="lien-btn" data-copie>Copier le résumé</button><span class="etat" data-etat></span></div>
+  </div>
+</section>
+
+<!-- 12 Gardez en tête -->
+<section class="slide" data-section="suite" aria-label="Gardez en tête">
+  <div class="contenu">
+    <p class="sur monte">La suite : le prototypage</p>
+    <h2 class="monte">Gardez en tête…</h2>
+    <div class="trois gardez">
+      <div class="bloc fort seq" style="--d:.5s"><b>Les besoins et idées qui ont émergé du fishbowl</b>Ce qui vient d'être dit et noté est votre matière première.</div>
+      <div class="bloc seq" style="--d:1.2s"><b>Les bonnes idées gardées trop longtemps au frigo</b>Celles que vous n'avez jamais eu le temps de lancer.</div>
+      <div class="bloc seq" style="--d:1.9s"><b>L'identité de vos destinataires</b>Élèves, collègues, politique, associations…</div>
+    </div>
+  </div>
+</section>
+</main>
+
+<nav class="nav" aria-label="Navigation">
+  <div class="sections" id="sections"></div>
+  <div class="pas"><button id="prec" aria-label="Diapositive précédente">&#8249;</button><span id="pos">1 / 12</span><button id="suiv" aria-label="Diapositive suivante">&#8250;</button></div>
+</nav>
+
+<script>
+(function(){
+"use strict";
+var reduit=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+
+var TAGS={officiel:"Source officielle",presse:"Presse",entreprise:"Annonce de l'entreprise",verifier:"À vérifier",recherche:"Recherche"};
+
+/* ---------- Données ---------- */
+var SONDAGE=["La direction","Le pouvoir organisateur ou le réseau","Le référent numérique, moi","Personne : chacun fait comme il veut"];
+var PHASES=[{nom:"Question 1",min:25},{nom:"Question 2",min:25}];
+var TABLEAUX={
+ synthese:[{nom:"Idées clés",cls:""},{nom:"Difficultés rencontrées",cls:""},{nom:"Leviers identifiés",cls:""}],
+ tri:[{nom:"Pratique qui survit (à généraliser)",cls:"survit"},{nom:"On élimine (à abandonner ou retravailler)",cls:"elimine"},{nom:"Besoins émergents et thématiques prioritaires pour IA4EDU",cls:"large"}]
+};
+/* ---------- Diapositives et navigation ---------- */
+var slides=$$(".slide"), idx=0;
+var SECTIONS=[["accueil","Accueil"],["consigne","Consigne"],["dispositif","Dispositif"],["synthese","Synthèse collective"],["suite","Gardez en tête"]];
+var navSec=$("#sections");
+SECTIONS.forEach(function(s){
+  var b=el("button",null,s[1]);b.type="button";b.dataset.sec=s[0];
+  b.addEventListener("click",function(){var i=slides.findIndex(function(x){return x.dataset.section===s[0]});if(i>=0)aller(i)});
+  navSec.appendChild(b);
+});
+function aller(i){
+  i=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,k){s.classList.toggle("active",k===i)});
+  idx=i;
+  $("#pos").textContent=(i+1)+" / "+slides.length;
+  $("#barre").style.width=(slides.length>1?i/(slides.length-1)*100:0)+"%";
+  var sec=slides[i].dataset.section;
+  $$("#sections button").forEach(function(b){b.classList.toggle("on",b.dataset.sec===sec)});
+  var on=$("#sections button.on");if(on&&on.scrollIntoView)on.scrollIntoView({block:"nearest",inline:"nearest"});
+  slides[i].scrollTop=0;
+  try{history.replaceState(null,"","#"+(i+1))}catch(e){}
+
+}
+$("#prec").addEventListener("click",function(){aller(idx-1)});
+$("#suiv").addEventListener("click",function(){aller(idx+1)});
+var zoom=1;try{zoom=parseFloat(localStorage.getItem("creacamp_zoom"))||1}catch(x){}
+function regler(z){zoom=Math.max(.5,Math.min(2.5,Math.round(z*100)/100));document.documentElement.style.setProperty("--z",zoom);try{localStorage.setItem("creacamp_zoom",zoom)}catch(x){}}
+regler(zoom);
+window.addEventListener("wheel",function(e){if(e.ctrlKey){regler(zoom*(e.deltaY<0?1.1:1/1.1));e.preventDefault()}},{passive:false});
+document.addEventListener("keydown",function(e){
+  if(e.ctrlKey||e.metaKey){
+    if(e.key==="+"||e.key==="="){regler(zoom*1.1);e.preventDefault()}
+    else if(e.key==="-"){regler(zoom/1.1);e.preventDefault()}
+    else if(e.key==="0"){regler(1);e.preventDefault()}
+  }
+});
+document.addEventListener("keydown",function(e){
+  var t=e.target&&e.target.tagName;if(t==="INPUT"||t==="TEXTAREA")return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"){aller(idx+1);e.preventDefault()}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){aller(idx-1);e.preventDefault()}
+  else if(e.key==="Home"){aller(0)}
+  else if(e.key==="End"){aller(slides.length-1)}
+  else if(e.key==="f"||e.key==="F"){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}}
+});
+$$("[data-va]").forEach(function(b){b.addEventListener("click",function(){var i=slides.findIndex(function(x){return x.dataset.section===b.dataset.va});if(i>=0)aller(i)})});
+
+/* ---------- Cercle du fishbowl ---------- */
+(function(){
+  var svg=$("#chaises"),CX=240,CY=200,NS="http://www.w3.org/2000/svg";
+  function pos(r,deg){var a=deg*Math.PI/180;return [CX+r*Math.cos(a),CY+r*Math.sin(a)]}
+  function pers(x,y,col,s,extra){return '<g transform="translate('+x.toFixed(1)+' '+y.toFixed(1)+')" '+(extra||"")+'><g transform="scale('+s+')"><circle cx="0" cy="-10" r="7.5" fill="'+col+'"/><path d="M-12 11 Q-12 -1 0 -1 Q12 -1 12 11 Z" fill="'+col+'"/></g>%ANIM%</g>'}
+  var h='<g transform="translate(240 200) scale(1.22) translate(-240 -200)"><circle cx="'+CX+'" cy="'+CY+'" r="136" fill="#E1EBFF"/>';
+  h+='<circle cx="'+CX+'" cy="'+CY+'" r="58" fill="#D6E4FF" stroke="#6E94F0" stroke-width="2" stroke-dasharray="5 5"/>';
+  // 9 personnes autour, en cercle
+  var ext=[];for(var k=0;k<9;k++){ext.push(pos(104,-90+k*40+20))}
+  var cen=[pos(30,-45),pos(30,45),pos(30,135),pos(30,225)];
+  function anim(dx,dy,kt){return '<animateTransform attributeName="transform" type="translate" additive="sum" dur="12s" repeatCount="indefinite" calcMode="spline" keyTimes="'+kt+'" keySplines="0 0 1 1;.16 1 .3 1;0 0 1 1;.16 1 .3 1;0 0 1 1" values="0 0;0 0;'+dx.toFixed(1)+' '+dy.toFixed(1)+';'+dx.toFixed(1)+' '+dy.toFixed(1)+';0 0;0 0"/>'}
+  var pairs=[[5,2,"0;0.04;0.14;0.30;0.40;1"],[1,0,"0;0.54;0.64;0.80;0.90;1"]]; // [indice extérieur, indice centre, temps]
+  var mobiles={};
+  pairs.forEach(function(pr){mobiles[pr[0]]=pr});
+  var bougeCentre={};pairs.forEach(function(pr){bougeCentre[pr[1]]=pr});
+  // personnes fixes autour
+  ext.forEach(function(e,i){if(!mobiles[i])h+=pers(e[0],e[1],"#8AA9C9",1,"").replace("%ANIM%","")});
+  // personnes fixes au centre
+  cen.forEach(function(c,i){if(!bougeCentre[i])h+=pers(c[0],c[1],"#3D63C9",1,"").replace("%ANIM%","")});
+  // personnes qui échangent leur place (dessinées en dernier, au-dessus)
+  pairs.forEach(function(pr){
+    var e=ext[pr[0]],c=cen[pr[1]],dx=c[0]-e[0],dy=c[1]-e[1];
+    // anneau d'appel autour de la personne qui se lève
+    var s=parseFloat(pr[2].split(";")[1]),a=Math.max(0,s-0.09),b=Math.max(a,s-0.06);
+    h+='<circle cx="'+e[0].toFixed(1)+'" cy="'+e[1].toFixed(1)+'" r="19" fill="none" stroke="#2F4FA8" stroke-width="2.5" opacity="0"><animate attributeName="opacity" dur="12s" repeatCount="indefinite" keyTimes="0;'+a.toFixed(3)+';'+b.toFixed(3)+';'+s.toFixed(3)+';'+(s+0.001).toFixed(3)+';1" values="0;0;1;1;0;0"/></circle>';    h+=pers(e[0],e[1],"#2F4FA8",1,"").replace("%ANIM%",anim(dx,dy,pr[2]));
+    h+=pers(c[0],c[1],"#3D63C9",1,"").replace("%ANIM%",anim(-dx,-dy,pr[2]));
+  });
+  h+='</g>';
+  var f="font-family=\"system-ui, Segoe UI, Roboto, Arial, sans-serif\"";
+  h+='<text x="'+CX+'" y="20" text-anchor="middle" font-size="15" font-weight="700" fill="#2B3A5C" '+f+'>4 au centre : ils parlent</text>';
+  svg.innerHTML=h;
+  if(reduit&&svg.pauseAnimations){svg.pauseAnimations();svg.setCurrentTime(0)}
+})();
+/* ---------- Chrono ---------- */
+(function(){
+  var phases=$("#phases"),temps=$("#temps"),ann=$("#anneau"),reste=$(".reste",ann),go=$("#chrono-go"),zero=$("#chrono-zero");
+  var C=276.46,cur=0,total=PHASES[0].min*60,left=total,timer=null;
+  var PLAY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',PAUSE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>';
+  function fmt(s){var m=Math.floor(s/60),r=s%60;return (m<10?"0":"")+m+":"+(r<10?"0":"")+r}
+  function aff(){temps.textContent=fmt(left);reste.style.strokeDashoffset=String(C*(1-left/total));ann.classList.toggle("fini",left===0)}
+  function icone(enMarche){go.innerHTML=enMarche?PAUSE:PLAY;go.setAttribute("aria-label",enMarche?"Mettre en pause":(left===total||left===0?"Démarrer":"Reprendre"))}
+  function arret(){if(timer){clearInterval(timer);timer=null}icone(false)}
+  function bip(){try{var A=window.AudioContext||window.webkitAudioContext;var c=new A();[0,.35].forEach(function(t){var o=c.createOscillator(),g=c.createGain();o.frequency.value=t?660:880;g.gain.value=.08;o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+.25)})}catch(e){}}
+  function choisir(i){arret();cur=i;total=PHASES[i].min*60;left=total;$$("button",phases).forEach(function(b,k){b.setAttribute("aria-pressed",k===i?"true":"false")});aff();icone(false)}
+  PHASES.forEach(function(p,i){var b=el("button",null,p.nom);b.type="button";b.addEventListener("click",function(){choisir(i)});phases.appendChild(b)});
+  go.addEventListener("click",function(){
+    if(timer){arret();return}
+    if(left===0)left=total;
+    icone(true);
+    timer=setInterval(function(){left--;if(left<=0){left=0;aff();arret();bip();return}aff()},1000);
+  });
+  zero.addEventListener("click",function(){choisir(cur)});
+  choisir(0);
+})();
+/* ---------- Tableaux de saisie ---------- */
+$$("[data-tableau]").forEach(function(slide){
+  var cfg=TABLEAUX[slide.dataset.tableau],zone=$(".tableau",slide),listes=[],etat=$("[data-etat]",slide);
+  cfg.forEach(function(c){
+    var col=el("div","col "+c.cls);col.appendChild(el("h3",null,c.nom));
+    var f=el("form");var inp=el("input");inp.type="text";inp.setAttribute("aria-label","Ajouter : "+c.nom);inp.placeholder="Écrire puis Entrée";
+    var ok=el("button",null,"+");ok.type="submit";ok.setAttribute("aria-label","Ajouter");f.appendChild(inp);f.appendChild(ok);
+    var ul=el("ul");
+    f.addEventListener("submit",function(e){
+      e.preventDefault();var v=inp.value.trim();if(!v)return;
+      var li=el("li");li.appendChild(el("span",null,v));
+      var x=el("button",null,"×");x.type="button";x.setAttribute("aria-label","Retirer");x.addEventListener("click",function(){li.remove()});
+      li.appendChild(x);ul.appendChild(li);inp.value="";inp.focus();
+    });
+    col.appendChild(f);col.appendChild(ul);zone.appendChild(col);listes.push([c.nom,ul]);
+  });
+  $("[data-copie]",slide).addEventListener("click",function(){
+    var t=listes.map(function(l){return l[0]+"\n"+$$("li span",l[1]).map(function(s){return "- "+s.textContent}).join("\n")}).join("\n\n");
+    var fin=function(m){etat.textContent=m};
+    try{navigator.clipboard.writeText(t).then(function(){fin("Résumé copié.")},function(){fin("Copie refusée par le navigateur.")})}catch(e){fin("Copie impossible ici.")}
+  });
+});
+
+var depart=parseInt((location.hash||"").replace("#",""),10);
+aller(isNaN(depart)?0:depart-1);
+})();
+</script>
+</body>
+</html>
+
+
