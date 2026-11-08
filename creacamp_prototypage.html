@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Place au prototypage</title>
+<style>
+/* Charte AMlearn : 6.editions/identite/charte_graphique.md. Polices de l'appareil, aucune ressource externe. */
+:root{
+  --fond:#F6F9FF; --cercle:#E1EBFF; --trait:#6E94F0; --brume:#8AA9C9; --nuit:#2B3A5C; --gris:#4F5E7C;
+  --fine:#DCE8F4; --bleu:#3D63C9; --bleu-fonce:#2F4FA8; --pastille:#D6E4FF;
+  --pile:system-ui,'Segoe UI',Roboto,Arial,sans-serif; --courbe:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box}
+html{font-size:calc(clamp(12px,min(1.04vw,1.85vh),19.2px)*var(--z,1))}
+html,body{height:100%;margin:0}
+body{font-family:var(--pile);color:var(--nuit);background:var(--fond);line-height:1.5;overflow:hidden}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--bleu);outline-offset:2px}
+
+/* Décor : deux cercles doux */
+.decor{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.decor i{position:absolute;border-radius:50%;display:block}
+.decor .c1{width:46vmax;height:46vmax;background:var(--cercle);left:-14vmax;bottom:-18vmax;animation:derive 22s ease-in-out infinite alternate}
+.decor .c2{width:16vmax;height:16vmax;background:var(--brume);opacity:.28;right:-4vmax;top:-5vmax;animation:derive 28s ease-in-out infinite alternate-reverse}
+@keyframes derive{from{transform:translate(0,0)}to{transform:translate(3vmax,-2vmax)}}
+
+.barre{position:fixed;left:0;top:0;height:4px;background:var(--trait);width:0;z-index:30;transition:width .6s var(--courbe)}
+
+/* Scène */
+.deck{position:fixed;inset:0 0 3.2rem 0;z-index:1}
+.slide{position:absolute;inset:0;display:none;padding:clamp(1rem,3vw,3rem) clamp(1rem,5vw,5rem);overflow:auto}
+.slide.active{display:block}
+.slide.active .monte{animation:monte .7s var(--courbe) both}
+.slide.active .seq{animation:monte .8s var(--courbe) both;animation-delay:var(--d,0s)}
+@keyframes monte{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.contenu{max-width:78rem;margin:0 auto}
+
+h1,h2,h3{margin:0;font-weight:800;line-height:1.15}
+h2{font-size:clamp(1.6rem,3.4vw,2.7rem);margin:.4rem 0 .6rem}
+h3{font-size:1.15rem}
+p{margin:.4rem 0}
+.sur{font-size:.95rem;font-weight:700;letter-spacing:.02em;color:var(--bleu-fonce)}
+.lead{font-size:1.2rem;color:var(--gris);max-width:52rem}
+
+/* Navigation */
+.nav{position:fixed;left:0;right:0;bottom:0;height:3.2rem;z-index:20;display:flex;align-items:center;gap:.5rem;padding:0 clamp(.6rem,2vw,1.6rem);background:rgba(246,249,255,.92);border-top:1px solid var(--fine);backdrop-filter:blur(4px)}
+.nav .sections{display:flex;gap:.2rem;overflow-x:auto;flex:1;scrollbar-width:none}
+.nav .sections::-webkit-scrollbar{display:none}
+.nav button{background:none;border:0;border-bottom:3px solid transparent;padding:.35rem .6rem;cursor:pointer;color:var(--gris);font-size:.88rem;white-space:nowrap}
+.nav button:hover{color:var(--bleu-fonce)}
+.nav button.on{color:var(--nuit);font-weight:700;border-bottom-color:var(--bleu)}
+.nav .pas{display:flex;align-items:center;gap:.2rem;font-size:.88rem;color:var(--gris)}
+.nav .pas button{font-size:1.2rem;padding:.1rem .6rem;color:var(--bleu)}
+
+/* Blocs */
+.trois{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1rem;margin:1rem 0}
+.trois .bloc{background:#fff;border:1px solid var(--fine);border-top:5px solid var(--trait);border-radius:10px;padding:.9rem 1.1rem}
+.trois .bloc b{display:block;font-size:1.15rem;margin-bottom:.2rem}
+.trois.gardez{margin-top:1.4rem}
+.bloc.fort{background:var(--pastille);border-color:var(--bleu);border-top:5px solid var(--bleu-fonce)}
+.bloc.fort b{font-size:1.3rem}
+.trois.gardez .bloc b{font-size:1.25rem;line-height:1.25;min-height:2.5em}
+.objectif{border-left:5px solid var(--bleu);padding:.4rem 1rem;margin:.6rem 0;font-size:1.2rem;font-weight:600;max-width:60rem}
+.mention{position:absolute;left:clamp(1rem,5vw,5rem);right:clamp(1rem,5vw,5rem);bottom:.9rem;max-width:78rem;margin:0 auto;font-size:.85rem;color:var(--gris)}
+
+/* Titre */
+h1{font-size:clamp(2.2rem,5.4vw,4.2rem)}
+.titre-wrap{min-height:100%;display:flex;flex-direction:column;justify-content:center;gap:1rem}
+.titre-wrap h1 span{color:var(--bleu)}
+.titre-wrap svg{width:min(26rem,100%)}
+
+/* Gestes en grand */
+.grandes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem;margin-top:1rem}
+.grandes.quatre{grid-template-columns:repeat(4,minmax(0,1fr));gap:.9rem}
+@media (max-width:1000px){.grandes.quatre{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.grandes,.grandes.quatre{grid-template-columns:1fr}}
+.grande{background:#fff;border:1px solid var(--fine);border-radius:14px;padding:.8rem 1.1rem 1rem;position:relative}
+.grande.cond{border-style:dashed;border-color:var(--bleu-fonce)}
+.grande .n{position:absolute;left:.8rem;top:.7rem;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--pastille);color:var(--bleu-fonce);font-weight:800;display:flex;align-items:center;justify-content:center}
+.grande svg{display:block;width:100%;height:9rem}
+.grandes.quatre .grande svg{height:6.5rem}
+.grande b{display:block;font-size:1.3rem;line-height:1.2;margin:.3rem 0 .3rem}
+.grandes.quatre .grande b{font-size:1.1rem}
+.grande ul{margin:.2rem 0 0;padding-left:1.2rem;color:var(--gris);font-size:1.02rem}
+.grande li{margin:.2rem 0}
+.grande svg{height:7rem}
+.grande ul{font-size:1.2rem}
+.grande b{font-size:1.45rem}
+.grande ul strong{color:var(--nuit)}
+.pourquoi{margin:.7rem 0 0;padding:.45rem .8rem;background:var(--pastille);border-radius:8px;font-size:1.1rem;color:var(--nuit)}
+.criteres{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin:.3rem 0 0}
+.criteres span{background:var(--fond);border:1px solid var(--fine);border-radius:8px;padding:.3rem .6rem;font-size:1rem;color:var(--gris)}
+.criteres b{display:block;margin:0;font-size:1.05rem;color:var(--bleu-fonce)}
+.grande .mots{margin-top:.5rem}
+
+/* Gestes en 2 x 2 */
+/* Chaque vignette occupe 4 rangées partagées (titre, liste, critères, pourquoi) : titres et « pourquoi » alignés d'une vignette à l'autre */
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,auto minmax(11.5rem,auto) auto auto);gap:0 1.4rem;margin-top:.8rem;align-content:start}
+.g2 .gcol:nth-child(-n+2){margin-bottom:1.1rem}
+@media (max-width:800px){.g2{grid-template-columns:1fr;grid-template-rows:none}.g2 .gcol{margin-bottom:1rem}}
+.gcol{background:#fff;border:1px solid var(--fine);border-radius:14px;padding:1rem 1.3rem 1.1rem;position:relative;display:grid;grid-row:span 4;grid-template-rows:subgrid;grid-template-columns:9.5rem minmax(0,1fr);column-gap:1.2rem;row-gap:0}
+.gcol.cond{border-style:dashed;border-color:var(--bleu-fonce)}
+.gcol .n{grid-column:1;grid-row:1;align-self:center;justify-self:start;width:2.4rem;height:2.4rem;border-radius:50%;background:var(--pastille);color:var(--bleu-fonce);font-weight:800;font-size:1.3rem;display:flex;align-items:center;justify-content:center}
+.gcol .txt{display:contents}
+.gcol .ill{grid-column:1;grid-row:2 / span 2;align-self:center}
+.gcol .ill svg{display:block;width:100%;height:auto}
+.gcol b{grid-column:1 / -1;grid-row:1;align-self:center;display:block;font-size:1.65rem;line-height:1.2;margin:0 0 .6rem;padding-left:3.3rem}
+.gcol ul{grid-column:2;grid-row:2;margin:0;padding-left:1.3rem;color:var(--nuit);font-size:1.35rem;line-height:1.35}
+.gcol li{margin:.4rem 0}
+.gcol ul strong{color:var(--bleu-fonce)}
+.gcol .pourquoi{grid-column:1 / -1;grid-row:4;align-self:end;margin:1rem 0 0;font-size:1.25rem;padding:.5rem .9rem}
+.gcol .criteres{grid-column:2;grid-row:3;margin-top:.3rem}
+.gcol .pourquoi{margin-top:.7rem;text-align:center}
+.gcol .criteres span{font-size:1.05rem;line-height:1.25;padding:.2rem .6rem}
+.gcol .criteres b{font-size:1.15rem;margin:0}
+.ecriture{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.4fr);gap:2.4rem;align-items:center;margin-top:1.4rem}
+@media (max-width:900px){.ecriture{grid-template-columns:1fr}}
+.phrase{border-left:6px solid var(--bleu);padding:.5rem 1.3rem;margin:0 0 1.4rem;font-size:clamp(1.6rem,2.8vw,2.4rem);font-weight:700;line-height:1.3}
+.ecriture .puces i{font-size:1.3rem;padding:.35rem 1.1rem}
+.grande .mots i{font-size:.9rem}
+
+/* Étapes des idées */
+.entete{display:flex;flex-wrap:wrap;align-items:flex-start;gap:1rem 2rem;justify-content:space-between}
+.entete .chrono{padding:.4rem .9rem;gap:.8rem}
+.entete .anneau{width:4.6rem;height:4.6rem}
+.entete .anneau output{font-size:1.1rem}
+.entete .icone{width:2.3rem;height:2.3rem}
+.etapes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.8rem;margin-top:.8rem}
+@media (max-width:1000px){.etapes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.etapes{grid-template-columns:1fr}}
+.etape{background:#fff;border:1px solid var(--fine);border-radius:12px;padding:.6rem .9rem .8rem;position:relative}
+.etape .n{position:absolute;left:.7rem;top:.5rem;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--pastille);color:var(--bleu-fonce);font-weight:800;font-size:.95rem;display:flex;align-items:center;justify-content:center}
+.etape.cond{border-style:dashed;border-color:var(--bleu-fonce)}
+.etape svg{display:block;width:100%;height:4.6rem}
+.etape b{display:block;font-size:1.05rem;line-height:1.2;margin-top:.2rem}
+.etape span{display:block;color:var(--gris);font-size:.9rem;line-height:1.3;margin-top:.15rem}
+.mots{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.35rem}
+.mots i{font-style:normal;font-size:.75rem;font-weight:700;padding:.05rem .55rem;border-radius:1rem;background:var(--pastille);color:var(--bleu-fonce)}
+
+/* Dessins : papiers et personnes */
+.pa{fill:#fff;stroke:#6E94F0;stroke-width:2;transform-box:fill-box;transform-origin:center}
+.pa.fort{fill:#D6E4FF;stroke:#2F4FA8;stroke-width:2.5}
+.li{stroke:#8AA9C9;stroke-width:1.6;stroke-linecap:round}
+.pe{fill:#3D63C9}.pe.clair{fill:#8AA9C9}
+.tr{fill:none;stroke:#2F4FA8;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.slide.active .a-pop{animation:a-pop 4.5s ease-in-out infinite;animation-delay:var(--a,0s)}
+@keyframes a-pop{0%,6%{opacity:0;transform:scale(.4)}20%,82%{opacity:1;transform:none}96%,100%{opacity:0;transform:scale(.4)}}
+.slide.active .a-vol{animation:a-vol 4s ease-in-out infinite;animation-delay:var(--a,0s)}
+@keyframes a-vol{0%{opacity:0;transform:translate(-34px,2px)}30%{opacity:1}65%,100%{opacity:0;transform:translate(0,0)}}
+.slide.active .a-go{animation:a-go 3.6s ease-in-out infinite}
+@keyframes a-go{0%,15%{transform:none}45%,70%{transform:translate(34px,0)}100%{transform:none}}
+.slide.active .a-ret{animation:a-ret 3.6s ease-in-out infinite}
+@keyframes a-ret{0%,15%{transform:none}45%,70%{transform:translate(-34px,0)}100%{transform:none}}
+.slide.active .a-fade{animation:a-fade 4s ease-in-out infinite;animation-delay:var(--a,0s)}
+@keyframes a-fade{0%,15%{opacity:1}45%,80%{opacity:.2}100%{opacity:1}}
+.slide.active .a-star{animation:a-star 4s ease-in-out infinite}
+@keyframes a-star{0%,15%{transform:scale(1)}35%{transform:scale(1.25)}55%,100%{transform:scale(1)}}
+.slide.active .a-glisse{animation:a-glisse 4.5s ease-in-out infinite;animation-delay:var(--a,0s)}
+@keyframes a-glisse{0%,8%{opacity:0;transform:translate(-26px,14px)}30%,85%{opacity:1;transform:none}100%{opacity:0}}
+.slide.active .a-fusion{animation:a-fusion 4s ease-in-out infinite}
+@keyframes a-fusion{0%,12%{opacity:1;transform:none}50%,100%{opacity:0;transform:translate(var(--fx,0),0) scale(.5)}}
+.slide.active .a-neuf{animation:a-neuf 4s ease-in-out infinite}
+@keyframes a-neuf{0%,40%{opacity:0;transform:scale(.3)}60%,90%{opacity:1;transform:none}100%{opacity:0}}
+.slide.active .a-gom{animation:a-gom 4s ease-in-out infinite;animation-delay:var(--a,0s)}
+@keyframes a-gom{0%,10%{opacity:0;transform:scale(.2)}30%,85%{opacity:1;transform:none}100%{opacity:0}}
+.slide.active .a-marche{animation:a-marche 4.5s ease-in-out infinite}
+@keyframes a-marche{0%,10%{transform:none}55%,85%{transform:translate(78px,0)}100%{transform:none}}
+.slide.active .a-bulle{animation:a-bulle 5s ease-in-out infinite;animation-delay:var(--a,0s)}
+@keyframes a-bulle{0%,6%{opacity:0;transform:scale(.5)}20%,80%{opacity:1;transform:none}95%,100%{opacity:0;transform:scale(.5)}}
+.slide.active .a-trace{stroke-dasharray:1;stroke-dashoffset:1;animation:a-trace 2s var(--courbe) both;animation-delay:var(--a,0s)}
+@keyframes a-trace{to{stroke-dashoffset:0}}
+
+/* Chrono */
+.chrono{display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;background:#fff;border:1px solid var(--fine);border-radius:12px;padding:.7rem 1.1rem}
+.anneau{position:relative;width:6rem;height:6rem;flex:none}
+.anneau.grand{width:11rem;height:11rem}
+.anneau svg{width:100%;height:100%;transform:rotate(-90deg)}
+.anneau circle{fill:none;stroke-width:7}
+.anneau .fond{stroke:var(--fine)}
+.anneau .reste{stroke:var(--trait);stroke-linecap:round;transition:stroke-dashoffset .9s linear}
+.anneau output{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;font-variant-numeric:tabular-nums}
+.anneau.grand output{font-size:2.6rem}
+.anneau.fini .reste{stroke:var(--bleu-fonce)}
+.chrono .reg{display:flex;flex-direction:column;gap:.5rem}
+.chrono .choix{display:flex;gap:.4rem;flex-wrap:wrap}
+.chrono .choix button{background:#fff;border:1.5px solid var(--bleu);color:var(--bleu-fonce);border-radius:8px;padding:.35rem .9rem;font-weight:700;cursor:pointer;transition:background .2s var(--courbe),color .2s var(--courbe)}
+.chrono .choix button:hover{background:var(--pastille)}
+.chrono .choix button[aria-pressed="true"]{background:var(--bleu);color:#fff}
+.chrono .boutons{display:flex;gap:.5rem}
+.icone{width:2.7rem;height:2.7rem;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;border:1.5px solid var(--bleu);background:#fff;color:var(--bleu);cursor:pointer;padding:0;transition:background .2s var(--courbe)}
+.icone:hover{background:var(--pastille)}
+.icone.plein{background:var(--bleu);color:#fff}
+.icone.plein:hover{background:var(--bleu-fonce)}
+.icone svg{width:1.4rem;height:1.4rem;fill:currentColor}
+
+/* Au travail */
+.travail{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.6fr);gap:1.6rem;align-items:center;margin-top:.6rem}
+@media (max-width:900px){.travail{grid-template-columns:1fr}}
+.gros{text-align:center}
+.gros .chiffre{font-size:clamp(4rem,10vw,7.5rem);font-weight:800;color:var(--trait);line-height:1}
+.gros .unite{font-size:1.4rem;font-weight:700;color:var(--bleu-fonce)}
+.gros .sous{color:var(--gris);font-size:.98rem;margin-top:.4rem}
+.gabarit{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.7rem;margin:.6rem 0 1rem}
+@media (max-width:900px){.gabarit{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.gabarit div{background:#fff;border:1px solid var(--fine);border-top:5px solid var(--trait);border-radius:10px;padding:.6rem .8rem;font-weight:700}
+.gabarit small{display:block;font-weight:400;color:var(--gris);font-size:.85rem}
+.etiq{color:var(--gris);font-weight:700;font-size:.95rem;margin:.8rem 0 .3rem}
+.puces{display:flex;flex-wrap:wrap;gap:.5rem}
+.puces i{font-style:normal;font-weight:700;padding:.25rem .9rem;border-radius:1rem;background:var(--pastille);color:var(--nuit)}
+
+/* Partage */
+.partage{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:1.6rem;align-items:start;margin-top:.6rem}
+@media (max-width:900px){.partage{grid-template-columns:1fr}}
+.partage svg.bulles{width:100%;max-width:34rem;height:auto;display:block;margin:.8rem auto 0}
+
+/* Classroom */
+.classroom{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:1.6rem;align-items:center;margin-top:.6rem}
+@media (max-width:900px){.classroom{grid-template-columns:1fr}}
+.classroom svg{width:100%;max-width:40rem;height:auto;display:block;margin:0 auto}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<div class="decor" aria-hidden="true"><i class="c1"></i><i class="c2"></i></div>
+<div class="barre" id="barre"></div>
+
+<main class="deck" id="deck">
+
+<!-- 0 Accueil -->
+<section class="slide" data-section="accueil" aria-label="Titre">
+  <div class="contenu titre-wrap">
+    <p class="sur monte">Creacamp · Veille, échanges et co-créations pédagogiques</p>
+    <h1 class="monte">Place au <span>prototypage</span></h1>
+    <p class="lead monte">De la bonne idée au prototype que l'on montre en 180 secondes.</p>
+    <svg class="monte" viewBox="0 0 360 70" width="360" height="70" role="img" aria-label="Un papier devient une idée, puis un prototype" style="max-width:100%;height:auto;margin-top:.6rem">
+      <g class="pa a-pop" style="--a:0s"><rect x="10" y="12" width="34" height="46" rx="4"/><path class="li" d="M18 26h18M18 35h18M18 44h11"/></g>
+      <path class="tr a-trace" style="--a:.6s" pathLength="1" d="M56 35h58M104 27l10 8-10 8"/>
+      <g class="pa fort a-pop" style="--a:.5s"><rect x="126" y="8" width="42" height="54" rx="4"/><path class="tr" d="M135 35l8 8 14-17"/></g>
+      <path class="tr a-trace" style="--a:1.2s" pathLength="1" d="M182 35h58M230 27l10 8-10 8"/>
+      <g class="a-pop" style="--a:1s;transform-box:fill-box;transform-origin:center"><rect x="254" y="8" width="96" height="54" rx="8" fill="#fff" stroke="#3D63C9" stroke-width="3"/><path class="tr" d="M270 24h64M270 35h64M270 46h38"/></g>
+    </svg>
+  </div>
+  <p class="mention">Conçu par Angelo, codé par l'IA</p>
+</section>
+
+<!-- 1 Gardez en tête (dernière diapo du fishbowl) -->
+<section class="slide" data-section="suite" aria-label="Gardez en tête">
+  <div class="contenu outil">
+    <div class="scene rv" style="--d:0s">
+      <svg viewBox="0 0 420 290" role="img" aria-label="Les besoins du fishbowl, les idées du frigo et les destinataires convergent vers votre prototype">
+        <g class="fade" style="--d:.1s"><rect x="14" y="22" width="124" height="62" rx="12" fill="#fff" stroke="#6E94F0" stroke-width="2.4"/><text x="76" y="50" text-anchor="middle" font-size="15" font-weight="800" fill="#2B3A5C">Besoins</text><text x="76" y="68" text-anchor="middle" font-size="12" fill="#5A6785">du fishbowl</text></g>
+        <g class="fade" style="--d:.3s"><rect x="14" y="206" width="124" height="62" rx="12" fill="#fff" stroke="#6E94F0" stroke-width="2.4"/><text x="76" y="234" text-anchor="middle" font-size="15" font-weight="800" fill="#2B3A5C">Le frigo</text><text x="76" y="252" text-anchor="middle" font-size="12" fill="#5A6785">idées gardées</text></g>
+        <g class="fade" style="--d:.5s"><rect x="286" y="114" width="124" height="62" rx="12" fill="#fff" stroke="#6E94F0" stroke-width="2.4"/><text x="348" y="142" text-anchor="middle" font-size="15" font-weight="800" fill="#2B3A5C">Destinataires</text><text x="348" y="160" text-anchor="middle" font-size="12" fill="#5A6785">pour qui ?</text></g>
+        <g class="pop" style="--d:.7s"><rect x="172" y="88" width="78" height="100" rx="10" fill="#D6E4FF" stroke="#2F4FA8" stroke-width="3"/><path d="M186 112h50M186 128h50M186 144h30" stroke="#2F4FA8" stroke-width="3" stroke-linecap="round" fill="none" opacity=".6"/><path class="pulse" d="M206 168l8 8 16-18" fill="none" stroke="#2F4FA8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></g>
+        <text x="211" y="214" text-anchor="middle" font-size="13" font-weight="700" fill="#2F4FA8">votre prototype</text>
+        <g class="vers" style="--dx:-86px;--dy:-52px;--d:0s"><rect x="146" y="82" width="16" height="22" rx="3" fill="#fff" stroke="#6E94F0" stroke-width="2"/></g>
+        <g class="vers" style="--dx:-86px;--dy:62px;--d:1.1s"><rect x="146" y="156" width="16" height="22" rx="3" fill="#fff" stroke="#6E94F0" stroke-width="2"/></g>
+        <g class="vers" style="--dx:80px;--dy:0px;--d:2.2s"><rect x="256" y="120" width="16" height="22" rx="3" fill="#fff" stroke="#6E94F0" stroke-width="2"/></g>
+      </svg>
+    </div>
+    <div class="texte">
+      <div class="rang1 rv" style="--d:.1s"><span class="sur">Creacamp : place au prototypage</span></div>
+      <h2 class="rv" style="--d:.15s">Gardez en tête…</h2>
+      <ul class="points rv" style="--d:.25s">
+        <li><i>1</i><span><b>Les besoins et idées du fishbowl.</b> Ce qui vient d'être dit et noté est votre matière première.</span></li>
+        <li><i>2</i><span><b>Les bonnes idées gardées trop longtemps au frigo.</b> Celles que vous n'avez jamais eu le temps de lancer.</span></li>
+        <li><i>3</i><span><b>L'identité de vos destinataires.</b> Élèves, collègues, politique, associations…</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 2a Gestes 1 à 4 -->
+<section class="slide" data-section="idees" aria-label="Gestes 1 à 4">
+  <div class="contenu">
+    <p class="sur monte">Des idées au projet · gestes 1 à 4</p>
+    <h2 class="monte">Un papier, une idée !</h2>
+    <div class="g2">
+      <div class="gcol seq" style="--d:.3s"><span class="n">1</span><div class="ill"><svg viewBox="0 0 120 64" role="img" aria-label="Des papiers apparaissent un à un">
+          <g class="pa a-pop" style="--a:0s"><rect x="10" y="14" width="26" height="34" rx="3"/><path class="li" d="M16 24h14M16 31h14M16 38h9"/></g>
+          <g class="pa a-pop" style="--a:.5s"><rect x="42" y="10" width="26" height="34" rx="3"/><path class="li" d="M48 20h14M48 27h14M48 34h9"/></g>
+          <g class="pa a-pop" style="--a:1s"><rect x="74" y="16" width="26" height="34" rx="3"/><path class="li" d="M80 26h14M80 33h14M80 40h9"/></g>
+          <path class="tr" d="M104 56l10-22 5 3-10 22z" />
+        </svg></div><div class="txt">
+        <b>J'écris mes idées</b>
+        <ul>
+          <li>Je termine la phrase affichée.</li>
+          <li><strong>Une idée par papier</strong>, écrite en gros.</li>
+          <li><strong>Au moins 4 papiers</strong>.</li>
+        </ul>
+        <p class="pourquoi">Plus il y a d'idées, plus on a de choix.</p></div></div>
+      <div class="gcol seq" style="--d:.7s"><span class="n">2</span><div class="ill"><svg viewBox="0 0 120 64" role="img" aria-label="Des papiers de la table centrale vers une personne">
+          <ellipse cx="34" cy="40" rx="26" ry="12" fill="#E1EBFF" stroke="#6E94F0" stroke-width="2"/>
+          <rect class="pa" x="22" y="26" width="14" height="18" rx="2"/><rect class="pa" x="34" y="24" width="14" height="18" rx="2"/>
+          <g class="pa a-vol" style="--a:0s"><rect x="62" y="22" width="14" height="18" rx="2"/></g>
+          <g class="pa a-vol" style="--a:.4s"><rect x="62" y="22" width="14" height="18" rx="2"/></g>
+          <g class="pa a-vol" style="--a:.8s"><rect x="62" y="22" width="14" height="18" rx="2"/></g>
+          <circle class="pe" cx="98" cy="22" r="8"/><path class="pe" d="M82 52q0-18 16-18t16 18z"/>
+        </svg></div><div class="txt">
+        <b>Je pose mes papiers au milieu</b>
+        <ul>
+          <li>Au signal, je pose <strong>tous mes papiers</strong> sur la table centrale.</li>
+          <li>Je reçois <strong>3 papiers écrits par d'autres</strong>, puis je les lis.</li>
+        </ul>
+        <p class="pourquoi">On regarde l'idée, pas son auteur.</p></div></div>
+      <div class="gcol seq" style="--d:1.1s"><span class="n">3</span><div class="ill"><svg viewBox="0 0 120 64" role="img" aria-label="Deux personnes échangent des papiers">
+          <circle class="pe" cx="20" cy="40" r="7"/><path class="pe" d="M6 62q0-16 14-16t14 16z"/>
+          <circle class="pe clair" cx="100" cy="40" r="7"/><path class="pe clair" d="M86 62q0-16 14-16t14 16z"/>
+          <g class="a-go"><rect class="pa" x="30" y="14" width="16" height="22" rx="2"/></g>
+          <g class="a-ret"><rect class="pa" x="74" y="14" width="16" height="22" rx="2"/></g>
+          <path class="tr" d="M52 10h16M62 5l6 5-6 5" style="opacity:.6"/>
+        </svg></div><div class="txt">
+        <b>J'échange mes 3 papiers</b>
+        <ul>
+          <li>Je demande : <strong>«&nbsp;Je te prends <span style="white-space:nowrap">celui-là&nbsp;?&nbsp;»</span></strong></li>
+          <li>Ou je pioche sur la table centrale.</li>
+          <li>Je repose ceux que j'aime moins.</li>
+        </ul>
+        <p class="pourquoi">Je cherche les idées qui m'attirent.</p></div></div>
+      <div class="gcol seq" style="--d:1.5s"><span class="n">4</span><div class="ill"><svg viewBox="0 0 120 64" role="img" aria-label="Une seule idée est gardée, les autres s'effacent">
+          <g class="pa a-fade" style="--a:0s"><rect x="8" y="16" width="22" height="30" rx="3"/></g>
+          <g class="pa a-fade" style="--a:.15s"><rect x="34" y="16" width="22" height="30" rx="3"/></g>
+          <g class="a-star" style="transform-box:fill-box;transform-origin:center"><g class="pa fort"><rect x="62" y="12" width="26" height="36" rx="3"/></g><path class="tr" d="M68 30l6 6 9-12"/></g>
+          <g class="pa a-fade" style="--a:.3s"><rect x="94" y="16" width="22" height="30" rx="3"/></g>
+        </svg></div><div class="txt">
+        <b>Je garde un seul papier</b>
+        <ul>
+          <li>Je garde <strong>1 papier</strong>, je repose les 2 autres.</li>
+          <li>Je choisis avec 4 questions :
+            <ul style="margin:.2rem 0 0;padding-left:1.1rem;font-size:1.2rem;line-height:1.25">
+              <li style="margin:.05rem 0"><strong>Intérêt</strong> : ça me motive ?</li>
+              <li style="margin:.05rem 0"><strong>Faisabilité</strong> : c'est réaliste ?</li>
+              <li style="margin:.05rem 0"><strong>Compétences</strong> : j'ai ce qu'il faut ?</li>
+              <li style="margin:.05rem 0"><strong>Prototype</strong> : on peut le montrer ?</li>
+            </ul>
+          </li>
+        </ul>
+        <p class="pourquoi">Je développe une idée qui me motive.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2b Gestes 5 à 8 -->
+<section class="slide" data-section="idees" aria-label="Gestes 5 à 8">
+  <div class="contenu">
+    <p class="sur monte">Des idées au projet · gestes 5 à 8</p>
+    <h2 class="monte">On rassemble, puis on choisit son équipe</h2>
+    <div class="g2">
+      <div class="gcol seq" style="--d:.3s"><span class="n">5</span><div class="ill"><svg viewBox="0 0 120 64" role="img" aria-label="Des papiers voisins se rassemblent sur un mur">
+          <rect x="4" y="4" width="112" height="56" rx="6" fill="#F6F9FF" stroke="#DCE8F4" stroke-width="2"/>
+          <g class="pa a-glisse" style="--a:0s"><rect x="12" y="12" width="16" height="20" rx="2"/></g>
+          <g class="pa a-glisse" style="--a:.4s"><rect x="22" y="22" width="16" height="20" rx="2"/></g>
+          <g class="pa a-glisse" style="--a:.8s"><rect x="64" y="10" width="16" height="20" rx="2"/></g>
+          <g class="pa a-glisse" style="--a:1.2s"><rect x="76" y="22" width="16" height="20" rx="2"/></g>
+          <g class="pa a-glisse" style="--a:1.6s"><rect x="88" y="34" width="16" height="20" rx="2"/></g>
+          <ellipse cx="29" cy="30" rx="26" ry="23" fill="none" stroke="#2F4FA8" stroke-width="1.8" stroke-dasharray="4 4"/>
+        </svg></div><div class="txt">
+        <b>Je rassemble les idées proches</b>
+        <ul>
+          <li>Je cherche les papiers qui <strong>ressemblent au mien</strong>.</li>
+          <li>On les affiche <strong>ensemble sur le mur</strong>.</li>
+          <li>Si aucun papier ne lui ressemble, il reste seul.</li>
+        </ul>
+        <p class="pourquoi">On voit quels thèmes reviennent.</p></div></div>
+      <div class="gcol seq" style="--d:.7s"><span class="n">6</span><div class="ill"><svg viewBox="0 0 120 64" role="img" aria-label="Plusieurs idées fusionnent en une idée améliorée">
+          <g class="pa a-fusion" style="--fx:30px"><rect x="14" y="8" width="20" height="26" rx="3"/></g>
+          <g class="pa a-fusion" style="--fx:34px"><rect x="10" y="30" width="20" height="26" rx="3"/></g>
+          <g class="pa a-fusion" style="--fx:-30px"><rect x="86" y="18" width="20" height="26" rx="3"/></g>
+          <g class="a-neuf" style="transform-box:fill-box;transform-origin:center"><g class="pa fort"><rect x="42" y="10" width="36" height="44" rx="4"/></g><path class="tr" d="M50 26h20M50 34h20M50 42h12"/></g>
+          <path class="tr" d="M96 14l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" style="opacity:.7"/>
+        </svg></div><div class="txt">
+        <b>On fusionne en une seule idée</b>
+        <ul>
+          <li>Chaque groupe écrit <strong>une seule idée</strong> à partir de ses papiers.</li>
+          <li>Elle est plus précise et plus concrète.</li>
+          <li>Elle reste affichée au mur.</li>
+        </ul>
+        <p class="pourquoi">À plusieurs, l'idée est plus solide.</p></div></div>
+      <div class="gcol cond seq" style="--d:1.1s"><span class="n">7</span><div class="ill"><svg viewBox="0 0 120 64" role="img" aria-label="Des gommettes sur des papiers pour voter">
+          <g class="pa"><rect x="10" y="14" width="22" height="30" rx="3"/></g><g class="pa"><rect x="40" y="14" width="22" height="30" rx="3"/></g><g class="pa"><rect x="70" y="14" width="22" height="30" rx="3"/></g>
+          <circle class="a-gom" style="--a:0s;fill:#3D63C9;transform-box:fill-box;transform-origin:center" cx="46" cy="22" r="5"/>
+          <circle class="a-gom" style="--a:.4s;fill:#3D63C9;transform-box:fill-box;transform-origin:center" cx="54" cy="30" r="5"/>
+          <circle class="a-gom" style="--a:.8s;fill:#3D63C9;transform-box:fill-box;transform-origin:center" cx="48" cy="38" r="5"/>
+          <circle class="a-gom" style="--a:1.2s;fill:#3D63C9;transform-box:fill-box;transform-origin:center" cx="16" cy="24" r="5"/>
+          <circle class="a-gom" style="--a:1.6s;fill:#3D63C9;transform-box:fill-box;transform-origin:center" cx="78" cy="28" r="5"/>
+        </svg></div><div class="txt">
+        <b>Je vote, s'il y a plus de 7 idées</b>
+        <ul>
+          <li><strong>7 idées ou moins</strong> : pas de vote, on passe au geste 8.</li>
+          <li><strong>Plus de 7 idées</strong> : chacun vote, on garde les plus soutenues.</li>
+        </ul>
+        <p class="pourquoi">On garde peu d'idées, pour bien les développer.</p></div></div>
+      <div class="gcol seq" style="--d:1.5s"><span class="n">8</span><div class="ill"><svg viewBox="0 0 120 64" role="img" aria-label="Une personne se déplace devant l'idée qu'elle veut développer">
+          <rect x="84" y="6" width="30" height="52" rx="5" fill="#F6F9FF" stroke="#DCE8F4" stroke-width="2"/>
+          <g class="pa fort"><rect x="90" y="14" width="18" height="24" rx="3"/></g>
+          <g class="a-marche"><circle class="pe" cx="14" cy="30" r="8"/><path class="pe" d="M-2 60q0-20 16-20t16 20z"/></g>
+        </svg></div><div class="txt">
+        <b>Je me place devant une idée</b>
+        <ul>
+          <li>Je vais devant l'idée que <strong>j'ai envie de développer</strong>, pas forcément la mienne.</li>
+          <li>Ceux qui sont devant la même idée forment <strong>une équipe de 3 ou 4</strong>.</li>
+          <li>Idée trop peu choisie : ses porteurs rejoignent une autre équipe.</li>
+        </ul>
+        <p class="pourquoi">Chacun travaille où il a envie d'être.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2b Geste 1 : j'écris (le chrono se lance seulement après la lecture des gestes) -->
+<section class="slide" data-section="idees" aria-label="Geste 1 : j'écris">
+  <div class="contenu outil">
+    <div class="scene rv" style="--d:0s">
+      <div class="chrono" data-chrono="3" aria-label="Chronomètre de 3 minutes" style="justify-content:center;position:relative">
+        <div class="anneau grand"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="fond" cx="50" cy="50" r="44"/><circle class="reste" cx="50" cy="50" r="44" stroke-dasharray="276.46" stroke-dashoffset="0"/></svg><output>03:00</output></div>
+        <div class="reg"><div class="choix"></div><div class="boutons"><button class="icone plein" data-go type="button" aria-label="Démarrer"></button><button class="icone" data-zero type="button" aria-label="Remettre à zéro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.4-5.3M5 4v4h4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+      </div>
+      <svg viewBox="0 0 420 110" role="img" aria-label="Des papiers apparaissent un à un" style="margin-top:.6rem">
+        <g class="pa a-pop" style="--a:0s"><rect x="60" y="20" width="56" height="74" rx="6"/><path class="li" d="M72 40h32M72 54h32M72 68h20"/></g>
+        <g class="pa a-pop" style="--a:.5s"><rect x="150" y="14" width="56" height="74" rx="6"/><path class="li" d="M162 34h32M162 48h32M162 62h20"/></g>
+        <g class="pa a-pop" style="--a:1s"><rect x="240" y="22" width="56" height="74" rx="6"/><path class="li" d="M252 42h32M252 56h32M252 70h20"/></g>
+        <g class="pa a-pop" style="--a:1.5s"><rect x="330" y="16" width="56" height="74" rx="6"/><path class="li" d="M342 36h32M342 50h32M342 64h20"/></g>
+      </svg>
+    </div>
+    <div class="texte">
+      <div class="rang1 rv" style="--d:.1s"><span class="sur">Des idées au projet · geste 1</span></div>
+      <h2 class="rv" style="--d:.15s">J'écris mes idées</h2>
+      <p class="phrase rv" style="--d:.25s">Je trouve que, dans le paysage « IA et éducation », il manque cruellement de…</p>
+      <ul class="points rv" style="--d:.4s">
+        <li><i>1</i><span><b>Une idée par papier</b>, écrite en gros.</span></li>
+        <li><i>2</i><span><b>Au moins 4 papiers</b> en 3 minutes.</span></li>
+        <li><i>3</i><span>Je ne juge pas : <b>plus il y en a, mieux c'est.</b></span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+
+<!-- 3 Au travail -->
+<section class="slide" data-section="travail" aria-label="Au travail">
+  <div class="contenu outil">
+    <div class="scene rv" style="--d:0s">
+      <svg viewBox="0 0 420 290" role="img" aria-label="Un minuteur de 90 minutes et trois petits groupes autour d'une idée">
+        <circle cx="210" cy="104" r="78" fill="none" stroke="#E1EBFF" stroke-width="14"/>
+        <circle class="anneau90" cx="210" cy="104" r="78" fill="none" stroke="#3D63C9" stroke-width="14" stroke-linecap="round" pathLength="100" stroke-dasharray="100" transform="rotate(-90 210 104)"/>
+        <text x="210" y="116" text-anchor="middle" font-size="58" font-weight="800" fill="#2B3A5C">90</text>
+        <text x="210" y="142" text-anchor="middle" font-size="15" font-weight="700" fill="#2F4FA8">minutes</text>
+        <g class="pop" style="--d:.4s"><circle cx="86" cy="226" r="9" fill="#3D63C9"/><path d="M70 262q0-18 16-18t16 18z" fill="#3D63C9"/><circle cx="116" cy="230" r="8" fill="#8AA9C9"/><path d="M102 262q0-16 14-16t14 16z" fill="#8AA9C9"/><rect class="pa" x="90" y="196" width="18" height="24" rx="3"/></g>
+        <g class="pop" style="--d:.7s"><circle cx="196" cy="226" r="9" fill="#3D63C9"/><path d="M180 262q0-18 16-18t16 18z" fill="#3D63C9"/><circle cx="226" cy="230" r="8" fill="#8AA9C9"/><path d="M212 262q0-16 14-16t14 16z" fill="#8AA9C9"/><circle cx="256" cy="230" r="8" fill="#6E94F0"/><path d="M242 262q0-16 14-16t14 16z" fill="#6E94F0"/><rect class="pa" x="204" y="196" width="18" height="24" rx="3"/></g>
+        <g class="pop" style="--d:1s"><circle cx="318" cy="226" r="9" fill="#3D63C9"/><path d="M302 262q0-18 16-18t16 18z" fill="#3D63C9"/><circle cx="348" cy="230" r="8" fill="#8AA9C9"/><path d="M334 262q0-16 14-16t14 16z" fill="#8AA9C9"/><rect class="pa" x="322" y="196" width="18" height="24" rx="3"/></g>
+      </svg>
+    </div>
+    <div class="texte">
+      <div class="rang1 rv" style="--d:.1s"><span class="sur">Co-construction</span></div>
+      <h2 class="rv" style="--d:.15s">Au travail !</h2>
+      <p class="sous rv" style="--d:.2s">90 minutes, en petits groupes, autour d'une idée.</p>
+      <ul class="points rv" style="--d:.3s">
+        <li><i>1</i><span><b>Public</b> : pour qui ?</span></li>
+        <li><i>2</i><span><b>Problème</b> : quel manque ?</span></li>
+        <li><i>3</i><span><b>Prototype</b> : qu'est-ce qu'on montre ?</span></li>
+        <li><i>4</i><span><b>Prochaine étape</b> : et après ?</span></li>
+      </ul>
+      <p class="exemple rv" style="--d:.45s"><b>Votre trace d'une page</b><span>Votre prototype peut être une activité, un outil, une ressource, un plaidoyer ou une charte.</span></p>
+      <p class="prudence rv" style="--d:.55s"><b>À retenir</b><span>Il répond à un besoin ou à une pratique retenue au fishbowl.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- 4 Partage -->
+<section class="slide" data-section="partage" aria-label="Partage des prototypes">
+  <div class="contenu outil">
+    <div class="scene rv" style="--d:0s">
+      <div class="chrono" data-chrono="180,180" style="justify-content:center;position:relative">
+        <div class="anneau grand"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="fond" cx="50" cy="50" r="44"/><circle class="reste" cx="50" cy="50" r="44" stroke-dasharray="276.46" stroke-dashoffset="0"/></svg><output>03:00</output></div>
+        <div class="reg"><div class="choix"></div><div class="boutons"><button class="icone plein" data-go type="button" aria-label="Démarrer"></button><button class="icone" data-zero type="button" aria-label="Remettre à zéro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 1 0 2.4-5.3M5 4v4h4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+      </div>
+      <svg class="bulles" viewBox="0 0 300 100" role="img" aria-label="Deux bulles de dialogue : une question, puis « oui, et… »" style="max-width:26rem;margin:.4rem auto 0">
+        <g class="a-bulle" style="--a:.2s;transform-box:fill-box;transform-origin:left bottom"><path d="M10 10h130a8 8 0 0 1 8 8v36a8 8 0 0 1-8 8H40l-14 14v-14H10a8 8 0 0 1-8-8V18a8 8 0 0 1 8-8z" fill="#fff" stroke="#6E94F0" stroke-width="2"/><text x="75" y="42" text-anchor="middle" font-size="15" font-weight="700" fill="#2B3A5C" font-family="system-ui,Segoe UI,Roboto,Arial,sans-serif">C'est pour qui ?</text></g>
+        <g class="a-bulle" style="--a:1.4s;transform-box:fill-box;transform-origin:right bottom"><path d="M162 36h128a8 8 0 0 1 8 8v36a8 8 0 0 1-8 8h-14v14l-14-14H162a8 8 0 0 1-8-8V44a8 8 0 0 1 8-8z" fill="#D6E4FF" stroke="#2F4FA8" stroke-width="2"/><text x="226" y="68" text-anchor="middle" font-size="15" font-weight="700" fill="#2B3A5C" font-family="system-ui,Segoe UI,Roboto,Arial,sans-serif">Oui, et…</text></g>
+      </svg>
+    </div>
+    <div class="texte">
+      <div class="rang1 rv" style="--d:.1s"><span class="sur">Le partage</span></div>
+      <h2 class="rv" style="--d:.15s">Notre prototype en 180 secondes</h2>
+      <ul class="points rv" style="--d:.3s">
+        <li><i>1</i><span><b>Chaque groupe présente.</b> 180 secondes pour montrer le prototype. Pas une seconde de plus.</span></li>
+        <li><i>2</i><span><b>Questions de clarification.</b> On comprend avant de commenter.</span></li>
+        <li><i>3</i><span><b>Oui, et…</b> On ajoute à l'idée, on ne la démolit pas.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 5 Classroom -->
+<section class="slide" data-section="classroom" aria-label="Classroom M11">
+  <div class="contenu outil">
+    <div class="scene rv" style="--d:0s">
+      <svg viewBox="0 0 400 240" role="img" aria-label="Des papiers volent vers un écran Classroom M11">
+        <rect x="190" y="20" width="190" height="150" rx="12" fill="#fff" stroke="#6E94F0" stroke-width="3"/>
+        <rect x="190" y="20" width="190" height="34" rx="12" fill="#3D63C9"/>
+        <rect x="190" y="40" width="190" height="14" fill="#3D63C9"/>
+        <text x="285" y="44" text-anchor="middle" font-size="18" font-weight="800" fill="#fff" font-family="system-ui,Segoe UI,Roboto,Arial,sans-serif">Classroom M11</text>
+        <rect x="206" y="68" width="76" height="28" rx="5" fill="#D6E4FF"/><rect x="290" y="68" width="76" height="28" rx="5" fill="#D6E4FF"/>
+        <rect x="206" y="104" width="76" height="28" rx="5" fill="#D6E4FF"/><rect x="290" y="104" width="76" height="28" rx="5" fill="#E1EBFF" stroke="#6E94F0" stroke-dasharray="4 4"/>
+        <rect x="240" y="170" width="90" height="12" fill="#8AA9C9"/><rect x="215" y="182" width="140" height="8" rx="4" fill="#8AA9C9"/>
+        <g class="a-vol-c"><g class="pa a-vol2" style="--a:0s"><rect x="20" y="40" width="30" height="40" rx="3"/><path class="li" d="M27 52h16M27 61h16M27 70h10"/></g></g>
+        <g class="pa a-vol2" style="--a:1s"><rect x="20" y="100" width="30" height="40" rx="3"/><path class="li" d="M27 112h16M27 121h16M27 130h10"/></g>
+        <g class="pa a-vol2" style="--a:2s"><rect x="20" y="160" width="30" height="40" rx="3"/><path class="li" d="M27 172h16M27 181h16M27 190h10"/></g>
+      </svg>
+    </div>
+    <div class="texte">
+      <div class="rang1 rv" style="--d:.1s"><span class="sur">Pour finir</span></div>
+      <h2 class="rv" style="--d:.15s">Poster les idées sur le Classroom M11</h2>
+      <ul class="points rv" style="--d:.3s">
+        <li><i>1</i><span><b>Une idée, un prototype, une page.</b></span></li>
+        <li><i>2</i><span><b>Postez vos productions</b> pour qu'elles vivent après la journée.</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+</main>
+
+<nav class="nav" aria-label="Navigation">
+  <div class="sections" id="sections"></div>
+  <div class="pas"><button id="prec" aria-label="Diapositive précédente">&#8249;</button><span id="pos">1 / 5</span><button id="suiv" aria-label="Diapositive suivante">&#8250;</button></div>
+</nav>
+
+<style>
+.nav .signature{flex:none;font-size:.88rem;color:var(--gris);white-space:nowrap;padding-right:1rem}
+@media (max-width:900px){.nav .signature{display:none}}
+/* Diapos « scène » : même gabarit que creacamp_quoi_de_neuf_ia.html (dessin animé à gauche, texte à droite) */
+.outil{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(1rem,3vw,2.6rem);align-items:center;min-height:100%}
+@media (max-width:900px){.outil{grid-template-columns:1fr}}
+.scene{background:#fff;border:1px solid var(--fine);border-radius:22px;padding:1.2rem;position:relative;overflow:hidden}
+.scene::before{content:"";position:absolute;width:75%;aspect-ratio:1;border-radius:50%;background:var(--cercle);opacity:.55;right:-18%;top:-30%}
+.scene svg{position:relative;width:100%;height:auto;display:block}
+.scene svg text{font-family:var(--pile)}
+.scene .chrono{border:0;background:none;padding:.4rem}
+.scene .anneau svg{position:static;height:100%}
+.rv{animation:monte .7s var(--courbe) both;animation-delay:var(--d,0s)}
+.slide:not(.active) .rv{animation:none}
+.outil .rang1{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap}
+.outil h2{margin:.3rem 0 .2rem}
+.outil .sous{color:var(--gris);font-size:1.35rem;margin:0}
+.phrase{border-left:6px solid var(--bleu);padding:.4rem 1.1rem;margin:.7rem 0;font-size:1.6rem;font-weight:700;line-height:1.3;color:var(--nuit)}
+.points{list-style:none;padding:0;margin:1rem 0;display:grid;gap:.8rem}
+.points li{display:grid;grid-template-columns:2.3rem 1fr;gap:.8rem;align-items:start;font-size:1.3rem;line-height:1.35}
+.points li i{font-style:normal;width:2.3rem;height:2.3rem;border-radius:50%;background:var(--pastille);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--bleu-fonce);font-size:1.1rem}
+.exemple{display:flex;gap:.7rem;align-items:flex-start;background:var(--pastille);border-radius:12px;padding:.6rem .95rem;font-size:1.1rem;line-height:1.35;margin:.5rem 0 .4rem;max-width:36rem}
+.exemple b{color:var(--bleu-fonce);flex:none;max-width:7rem}
+.prudence{display:flex;gap:.7rem;align-items:flex-start;border:1.5px dashed var(--bleu-fonce);border-radius:12px;padding:.6rem .95rem;color:var(--bleu-fonce);font-size:1.1rem;line-height:1.35;margin:.4rem 0 0;max-width:36rem}
+.prudence b{white-space:nowrap}
+.vers,.pop,.fade,.pulse{transform-box:fill-box;transform-origin:center}
+.slide.active .pop{animation:pop .5s var(--courbe) backwards;animation-delay:var(--d,0s)}
+@keyframes pop{from{opacity:0;transform:scale(.55)}}
+.slide.active .fade{animation:fondu .6s ease backwards;animation-delay:var(--d,0s)}
+@keyframes fondu{from{opacity:0;transform:translateY(10px)}}
+.slide.active .pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.25);opacity:.5}}
+.slide.active .vers{animation:vers 3.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes vers{0%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.8)}20%{opacity:1}65%{opacity:1;transform:none}100%{opacity:0;transform:scale(.6)}}
+.slide.active .anneau90{animation:a90 6s ease-in-out infinite}
+@keyframes a90{0%{stroke-dashoffset:100}60%,85%{stroke-dashoffset:0}100%{stroke-dashoffset:100}}
+.slide.active .a-vol2{animation:a-vol2 4.5s ease-in-out infinite;animation-delay:var(--a,0s)}
+@keyframes a-vol2{0%,5%{opacity:0;transform:translate(0,0)}15%{opacity:1}60%{opacity:1;transform:translate(190px,0) scale(.6)}75%,100%{opacity:0;transform:translate(200px,0) scale(.4)}}
+/* ===== Échelle typographique commune aux trois supports Creacamp (projection) : même bloc dans chaque fichier ===== */
+.sur{font-size:1.15rem}
+.lead,.sous,.outil .sous{font-size:1.5rem;line-height:1.4}
+.points li,.chiffre span,.trois .bloc{font-size:1.35rem;line-height:1.35}
+.points li i{font-size:1.2rem}
+.tag{font-size:1rem;padding:.08rem .65rem}
+.liens{font-size:1.15rem}
+.exemple,.prudence{font-size:1.15rem;line-height:1.4;max-width:46rem}
+.tuile b{font-size:1.6rem}
+.tuile small{font-size:1.25rem;line-height:1.3}
+.mention{font-size:1.1rem}
+.nav button,.nav .pas{font-size:1rem}
+.chrono .choix button{font-size:1.2rem}
+/* Coupures de ligne : pas de mot seul à la fin d'un paragraphe, titres équilibrés */
+h1,h2,h3,.tuile b,.axe-carte b,.gcol b,.bloc b{text-wrap:balance}
+.lead,.sous,.points li,.exemple,.prudence,.chiffre span,.tuile small,.axe-carte span,.moment,.bloc,.gcol li,.objectif,.sec,.pourquoi,.regles-centre p{text-wrap:pretty}/* ===== fin de l'échelle commune ===== */</style>
+
+<script>
+(function(){
+"use strict";
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+
+/* ---------- Diapositives et navigation ---------- */
+var slides=$$(".slide"), idx=0;
+var SECTIONS=[["accueil","Accueil"],["suite","Gardez en tête"],["idees","Des idées au projet"],["travail","Au travail"],["partage","Le partage"],["classroom","Classroom M11"]];
+var navSec=$("#sections");
+SECTIONS.forEach(function(s){
+  var b=el("button",null,s[1]);b.type="button";b.dataset.sec=s[0];
+  b.addEventListener("click",function(){var i=slides.findIndex(function(x){return x.dataset.section===s[0]});if(i>=0)aller(i)});
+  navSec.appendChild(b);
+});
+function aller(i){
+  i=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach(function(s,k){s.classList.toggle("active",k===i)});
+  idx=i;
+  $("#pos").textContent=(i+1)+" / "+slides.length;
+  $("#barre").style.width=(slides.length>1?i/(slides.length-1)*100:0)+"%";
+  var sec=slides[i].dataset.section;
+  $$("#sections button").forEach(function(b){b.classList.toggle("on",b.dataset.sec===sec)});
+  var on=$("#sections button.on");if(on&&on.scrollIntoView)on.scrollIntoView({block:"nearest",inline:"nearest"});
+  slides[i].scrollTop=0;
+  try{history.replaceState(null,"","#"+(i+1))}catch(e){}
+}
+$("#prec").addEventListener("click",function(){aller(idx-1)});
+$("#suiv").addEventListener("click",function(){aller(idx+1)});
+var zoom=1;try{zoom=parseFloat(localStorage.getItem("creacamp_zoom"))||1}catch(x){}
+function regler(z){zoom=Math.max(.5,Math.min(2.5,Math.round(z*100)/100));document.documentElement.style.setProperty("--z",zoom);try{localStorage.setItem("creacamp_zoom",zoom)}catch(x){}}
+regler(zoom);
+window.addEventListener("wheel",function(e){if(e.ctrlKey){regler(zoom*(e.deltaY<0?1.1:1/1.1));e.preventDefault()}},{passive:false});
+document.addEventListener("keydown",function(e){
+  if(e.ctrlKey||e.metaKey){
+    if(e.key==="+"||e.key==="="){regler(zoom*1.1);e.preventDefault()}
+    else if(e.key==="-"){regler(zoom/1.1);e.preventDefault()}
+    else if(e.key==="0"){regler(1);e.preventDefault()}
+  }
+});
+document.addEventListener("keydown",function(e){
+  var t=e.target&&e.target.tagName;if(t==="INPUT"||t==="TEXTAREA")return;
+  if(e.key==="ArrowRight"||e.key==="PageDown"){aller(idx+1);e.preventDefault()}
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){aller(idx-1);e.preventDefault()}
+  else if(e.key==="Home"){aller(0)}
+  else if(e.key==="End"){aller(slides.length-1)}
+  else if(e.key==="f"||e.key==="F"){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(x){}}
+});
+
+/* ---------- Chronomètres : data-chrono="durées en minutes (ou secondes si >= 60)" ---------- */
+var PLAY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',PAUSE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>';
+function fmt(s){var m=Math.floor(s/60),r=s%60;return (m<10?"0":"")+m+":"+(r<10?"0":"")+r}
+function bip(){try{var A=window.AudioContext||window.webkitAudioContext;var c=new A();[0,.35].forEach(function(t){var o=c.createOscillator(),g=c.createGain();o.frequency.value=t?660:880;g.gain.value=.08;o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+.25)})}catch(e){}}
+$$("[data-chrono]").forEach(function(root){
+  var C=276.46,ann=$(".anneau",root),temps=$("output",root),reste=$(".reste",root),go=$("[data-go]",root),zero=$("[data-zero]",root),choix=$(".choix",root);
+  /* "3" = une durée de 3 min ; "180,180" = prototype 180 s puis réactions 180 s */
+  var dur=root.dataset.chrono.split(",").map(function(v){v=parseInt(v,10);return v>=60?v:v*60});
+  var noms=dur.length===1?["3 minutes"]:["Prototype","Réactions"];
+  var cur=0,total=dur[0],left=total,timer=null;
+  function aff(){temps.textContent=fmt(left);reste.style.strokeDashoffset=String(C*(1-left/total));ann.classList.toggle("fini",left===0)}
+  function icone(m){go.innerHTML=m?PAUSE:PLAY;go.setAttribute("aria-label",m?"Mettre en pause":(left===total||left===0?"Démarrer":"Reprendre"))}
+  function arret(){if(timer){clearInterval(timer);timer=null}icone(false)}
+  function choisir(i){arret();cur=i;total=dur[i];left=total;$$("button",choix).forEach(function(b,k){b.setAttribute("aria-pressed",k===i?"true":"false")});aff();icone(false)}
+  noms.forEach(function(n,i){var b=el("button",null,n);b.type="button";b.addEventListener("click",function(){choisir(i)});choix.appendChild(b)});
+  go.addEventListener("click",function(){
+    if(timer){arret();return}
+    if(left===0)left=total;
+    icone(true);
+    timer=setInterval(function(){left--;if(left<=0){left=0;aff();arret();bip();return}aff()},1000);
+  });
+  zero.addEventListener("click",function(){choisir(cur)});
+  choisir(0);
+});
+
+var depart=parseInt((location.hash||"").replace("#",""),10);
+aller(isNaN(depart)?0:depart-1);
+})();
+</script>
+</body>
+</html>

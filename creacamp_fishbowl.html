@@ -211,11 +211,62 @@ p{margin:.4rem 0}
 .sources ul{margin:0;padding-left:1.1rem}
 .sources li{margin:.15rem 0;break-inside:avoid}
 
+/* Diapos 2, 3 et 4 : texte agrandi pour la salle (corps 1,35 rem, titres 1,6 rem, comme le support du prototypage) */
+.slide:not([data-section="accueil"]) .sur{font-size:1.15rem}
+.slide:not([data-section="accueil"]) .lead{font-size:1.5rem;max-width:66rem}
+#consigne .objectif{font-size:1.5rem;max-width:72rem}
+#consigne .etiquette{font-size:1.5rem}
+#consigne .trois .bloc{font-size:1.35rem;line-height:1.35}
+#consigne .trois .bloc b{font-size:1.6rem;margin-bottom:.3rem}
+#consigne .trois.compact .bloc{padding:.8rem 1.2rem}
+#consigne .flux{font-size:1.5rem}
+#dispositif .moment{grid-template-columns:3.6rem 1fr;gap:1rem;padding:.85rem 1.2rem;font-size:1.35rem;line-height:1.35}
+#dispositif .moment h3{font-size:1.6rem;margin:0 0 .2rem}
+#dispositif .moment .min{font-size:2.4rem}
+/* La carte « Notes » n'est pas numérotée : elle accompagne les deux questions */
+#dispositif .moment:not([data-q]){grid-template-columns:1fr}
+#dispositif .moment:not([data-q]) .min{display:none}
+/* Une seule question à la fois, celle du chrono sélectionné (Question 1 ou Question 2) */
+#dispositif .moment.cache{display:none}
+.slide.active #dispositif .moment[data-q]:not(.cache),.slide.active .moment[data-q]:not(.cache){animation:monte .5s var(--courbe) both}
+#dispositif .moment[data-q]{grid-template-columns:4.4rem 1fr;padding:1.2rem 1.5rem;font-size:1.65rem;line-height:1.4}
+#dispositif .moment[data-q] h3{font-size:1.9rem;margin-bottom:.4rem}
+#dispositif .moment[data-q] .min{font-size:3.4rem}
+#dispositif .chrono .anneau{width:7.4rem;height:7.4rem}
+#dispositif .chrono .anneau output{font-size:1.7rem}
+#dispositif .chrono .choix button{font-size:1.25rem;padding:.4rem 1rem}
+#dispositif .icone{width:3.1rem;height:3.1rem}
+#dispositif #chaises{max-height:31rem}
+#dispositif .regles-centre{max-width:42rem;font-size:1.3rem;line-height:1.45;text-wrap:balance}
+#dispositif .regles-centre p{margin:.2rem 0}
+#dispositif .regles-centre b{font-size:1.4rem}
+.slide[data-tableau] .col{min-height:24rem;padding:1rem 1.1rem}
+.slide[data-tableau] .col h3{font-size:1.6rem}
+.slide[data-tableau] .col input{font-size:1.35rem;padding:.55rem .8rem}
+.slide[data-tableau] .col li{font-size:1.35rem;line-height:1.3}
+.slide[data-tableau] .col form button{font-size:1.4rem;padding:.4rem 1rem}
+.slide[data-tableau] .outils-tab{font-size:1.25rem}
+.slide[data-tableau] .etat{font-size:1.15rem}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
 
 }
-</style>
+/* ===== Échelle typographique commune aux trois supports Creacamp (projection) : même bloc dans chaque fichier ===== */
+.sur{font-size:1.15rem}
+.lead,.sous,.outil .sous{font-size:1.5rem;line-height:1.4}
+.points li,.chiffre span,.trois .bloc{font-size:1.35rem;line-height:1.35}
+.points li i{font-size:1.2rem}
+.tag{font-size:1rem;padding:.08rem .65rem}
+.liens{font-size:1.15rem}
+.exemple,.prudence{font-size:1.15rem;line-height:1.4;max-width:46rem}
+.tuile b{font-size:1.6rem}
+.tuile small{font-size:1.25rem;line-height:1.3}
+.mention{font-size:1.1rem}
+.nav button,.nav .pas{font-size:1rem}
+.chrono .choix button{font-size:1.2rem}
+/* Coupures de ligne : pas de mot seul à la fin d'un paragraphe, titres équilibrés */
+h1,h2,h3,.tuile b,.axe-carte b,.gcol b,.bloc b{text-wrap:balance}
+.lead,.sous,.points li,.exemple,.prudence,.chiffre span,.tuile small,.axe-carte span,.moment,.bloc,.gcol li,.objectif,.sec,.pourquoi,.regles-centre p{text-wrap:pretty}/* ===== fin de l'échelle commune ===== */</style>
 </head>
 <body>
 
@@ -267,8 +318,8 @@ p{margin:.4rem 0}
     <div class="dispo monte">
       <div>
         <div class="moments">
-          <div class="moment"><div class="min">1</div><div><h3>Première question</h3>J'ai vécu, entrepris, observé, entendu quelque chose qui m'a vraiment facilité la vie…</div></div>
-          <div class="moment"><div class="min">2</div><div><h3>Seconde question</h3>Quelles résistances avez-vous rencontrées dans votre établissement ? Quelles limites de l'IA avez-vous identifiées ?</div></div>
+          <div class="moment" data-q="0"><div class="min">1</div><div><h3>Première question</h3>J'ai vécu, entrepris, observé, entendu quelque chose qui m'a vraiment facilité la vie…</div></div>
+          <div class="moment" data-q="1"><div class="min">2</div><div><h3>Seconde question</h3>Quelles résistances avez-vous rencontrées dans votre établissement&nbsp;? Quelles limites de l'IA avez-vous identifiées&nbsp;?</div></div>
           <div class="moment"><div class="min">3</div><div><h3>Notes et synthèse collective</h3>Pendant le fishbowl, une personne prend des notes. À la fin : idées clés, difficultés rencontrées, leviers identifiés.</div></div>
         </div>
         <div class="chrono" id="chrono">
@@ -281,7 +332,7 @@ p{margin:.4rem 0}
       </div>
       <div>
         <svg viewBox="0 0 480 400" role="img" aria-label="Quatre personnes au centre, neuf autour en cercle : une personne touche une épaule et prend la place" id="chaises"></svg>
-        <div class="regles-centre"><p><b>Quatre chaises au centre.</b></p><p>Pour entrer, touchez l'épaule de quelqu'un du centre : il vous cède sa place.</p><p>Un tour par personne avant les reprises, pour qu'aucune voix ne domine.</p><p>Une personne note sur l'affiche.</p></div>
+        <div class="regles-centre"><p><b>Quatre chaises au centre.</b> Pour entrer, touchez l'épaule de quelqu'un du centre : il vous cède sa place. Un tour par personne avant les reprises, pour qu'aucune voix ne domine. Une personne note sur l'affiche.</p></div>
       </div>
     </div>
   </div>
@@ -295,19 +346,6 @@ p{margin:.4rem 0}
     <p class="lead monte">Les idées clés, les difficultés rencontrées et les leviers identifiés. On écrit ici, à voix haute, ce que le groupe dit.</p>
     <div class="tableau monte"></div>
     <div class="outils-tab"><button class="lien-btn" data-copie>Copier le résumé</button><span class="etat" data-etat></span></div>
-  </div>
-</section>
-
-<!-- 12 Gardez en tête -->
-<section class="slide" data-section="suite" aria-label="Gardez en tête">
-  <div class="contenu">
-    <p class="sur monte">La suite : le prototypage</p>
-    <h2 class="monte">Gardez en tête…</h2>
-    <div class="trois gardez">
-      <div class="bloc fort seq" style="--d:.5s"><b>Les besoins et idées qui ont émergé du fishbowl</b>Ce qui vient d'être dit et noté est votre matière première.</div>
-      <div class="bloc seq" style="--d:1.2s"><b>Les bonnes idées gardées trop longtemps au frigo</b>Celles que vous n'avez jamais eu le temps de lancer.</div>
-      <div class="bloc seq" style="--d:1.9s"><b>L'identité de vos destinataires</b>Élèves, collègues, politique, associations…</div>
-    </div>
   </div>
 </section>
 </main>
@@ -336,7 +374,7 @@ var TABLEAUX={
 };
 /* ---------- Diapositives et navigation ---------- */
 var slides=$$(".slide"), idx=0;
-var SECTIONS=[["accueil","Accueil"],["consigne","Consigne"],["dispositif","Dispositif"],["synthese","Synthèse collective"],["suite","Gardez en tête"]];
+var SECTIONS=[["accueil","Accueil"],["consigne","Consigne"],["dispositif","Dispositif"],["synthese","Synthèse collective"]];
 var navSec=$("#sections");
 SECTIONS.forEach(function(s){
   var b=el("button",null,s[1]);b.type="button";b.dataset.sec=s[0];
@@ -408,7 +446,7 @@ $$("[data-va]").forEach(function(b){b.addEventListener("click",function(){var i=
   });
   h+='</g>';
   var f="font-family=\"system-ui, Segoe UI, Roboto, Arial, sans-serif\"";
-  h+='<text x="'+CX+'" y="20" text-anchor="middle" font-size="15" font-weight="700" fill="#2B3A5C" '+f+'>4 au centre : ils parlent</text>';
+  h+='<text x="'+CX+'" y="22" text-anchor="middle" font-size="21" font-weight="700" fill="#2B3A5C" '+f+'>4 au centre : ils parlent</text>';
   svg.innerHTML=h;
   if(reduit&&svg.pauseAnimations){svg.pauseAnimations();svg.setCurrentTime(0)}
 })();
@@ -422,7 +460,7 @@ $$("[data-va]").forEach(function(b){b.addEventListener("click",function(){var i=
   function icone(enMarche){go.innerHTML=enMarche?PAUSE:PLAY;go.setAttribute("aria-label",enMarche?"Mettre en pause":(left===total||left===0?"Démarrer":"Reprendre"))}
   function arret(){if(timer){clearInterval(timer);timer=null}icone(false)}
   function bip(){try{var A=window.AudioContext||window.webkitAudioContext;var c=new A();[0,.35].forEach(function(t){var o=c.createOscillator(),g=c.createGain();o.frequency.value=t?660:880;g.gain.value=.08;o.connect(g);g.connect(c.destination);o.start(c.currentTime+t);o.stop(c.currentTime+t+.25)})}catch(e){}}
-  function choisir(i){arret();cur=i;total=PHASES[i].min*60;left=total;$$("button",phases).forEach(function(b,k){b.setAttribute("aria-pressed",k===i?"true":"false")});aff();icone(false)}
+  function choisir(i){arret();cur=i;total=PHASES[i].min*60;left=total;$$(".moment[data-q]").forEach(function(m){m.classList.toggle("cache",Number(m.dataset.q)!==i)});$$("button",phases).forEach(function(b,k){b.setAttribute("aria-pressed",k===i?"true":"false")});aff();icone(false)}
   PHASES.forEach(function(p,i){var b=el("button",null,p.nom);b.type="button";b.addEventListener("click",function(){choisir(i)});phases.appendChild(b)});
   go.addEventListener("click",function(){
     if(timer){arret();return}
