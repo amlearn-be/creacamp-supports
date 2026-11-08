@@ -902,8 +902,15 @@ $$("[data-axe]").forEach(monterAxe);
 function compter(s){
   $$(".nb",s).forEach(function(b){
     var n=+b.dataset.n,pre=b.dataset.pre||"",suf=b.dataset.suf||"";
-    var dec=+b.dataset.d||0;function f(v){b.textContent=pre+v.toLocaleString("fr-FR",{minimumFractionDigits:dec,maximumFractionDigits:dec})+suf}
-    if(reduit){f(n);return}
+    var dec=+b.dataset.d||0;function fmt(v){return v.toLocaleString("fr-FR",{minimumFractionDigits:dec,maximumFractionDigits:dec})}
+    if(reduit){b.textContent=pre+fmt(n)+suf;return}
+    /* Le préfixe et le suffixe restent fixes ; seul le nombre change, dans une boîte dont la largeur est celle du résultat final.
+       Sans cela, le bloc s'élargit à chaque chiffre et le texte voisin se réorganise (l'image tremble). */
+    b.textContent="";
+    var vi=document.createElement("i");vi.style.cssText="font-style:normal;display:inline-block;text-align:right";
+    b.appendChild(document.createTextNode(pre));b.appendChild(vi);b.appendChild(document.createTextNode(suf));
+    function f(v){vi.textContent=fmt(v)}
+    f(n);var w=vi.getBoundingClientRect().width;if(w>0)vi.style.minWidth=w+"px";
     var t0=null,fini=false;
     function pas(t){if(fini)return;if(t0===null)t0=t;var p=Math.min(1,(t-t0)/1400);f(n*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(pas)}
     f(0);requestAnimationFrame(pas);setTimeout(function(){fini=true;f(n)},1700);
